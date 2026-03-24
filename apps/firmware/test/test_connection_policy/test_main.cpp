@@ -5,8 +5,8 @@
 void test_backoff_increases_and_caps() {
     TEST_ASSERT_EQUAL_UINT32(1000UL, computeMqttReconnectDelayMs(0));
     TEST_ASSERT_EQUAL_UINT32(2000UL, computeMqttReconnectDelayMs(1));
-    TEST_ASSERT_EQUAL_UINT32(32000UL, computeMqttReconnectDelayMs(5));
-    TEST_ASSERT_EQUAL_UINT32(60000UL, computeMqttReconnectDelayMs(8));
+    TEST_ASSERT_EQUAL_UINT32(5000UL, computeMqttReconnectDelayMs(5));
+    TEST_ASSERT_EQUAL_UINT32(5000UL, computeMqttReconnectDelayMs(8));
 }
 
 void test_wifi_credential_validation() {

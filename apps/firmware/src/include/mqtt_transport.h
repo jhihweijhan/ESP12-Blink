@@ -24,8 +24,10 @@ public:
 
         _client.onConnect([this](bool sessionPresent) {
             _state = MqttConnectionState::CONNECTED;
-            _reconnectFailureCount = 0;
-            _lastConnectedAt = millis();
+            _consecutiveFailures = 0;
+            unsigned long now = millis();
+            _lastConnectedAt = now;
+            _lastMessageAt = now;
             Serial.println("MQTT connected");
             subscribeConfiguredTopics();
         });
@@ -70,8 +72,27 @@ public:
             return;
         }
 
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.println("MQTT connect skipped: WiFi not connected");
+            scheduleReconnect();
+            return;
+        }
+
+        uint32_t maxBlock = ESP.getMaxFreeBlockSize();
+        if (maxBlock < MQTT_MIN_HEAP_FOR_CONNECT) {
+            Serial.printf("MQTT connect deferred: max_block=%u < %u\n",
+                          maxBlock, (uint32_t)MQTT_MIN_HEAP_FOR_CONNECT);
+            scheduleReconnect();
+            return;
+        }
+
         _client.setServer(_configMgr->config.mqttServer, _configMgr->config.mqttPort);
-        _client.setKeepAlive(120);
+        // Disable MQTT-level keepalive. espMqttClientAsync's PINGREQ
+        // mechanism is unreliable on ESP8266 — the broker disconnects
+        // after 1.5× keepalive when no PINGREQ arrives.
+        // We use our own silence check (MQTT_CONNECTED_SILENCE_TIMEOUT_MS)
+        // to detect zombie connections instead.
+        _client.setKeepAlive(0);
 
         snprintf(_clientId, sizeof(_clientId), "ESP12-v2-%04x", (unsigned)random(0xffff));
         _client.setClientId(_clientId);
@@ -82,7 +103,14 @@ public:
         }
 
         _state = MqttConnectionState::RECONNECTING;
-        _client.connect();
+        _reconnectingStartMs = millis();
+        bool ok = _client.connect();
+        if (!ok) {
+            Serial.println("MQTT connect() returned false");
+            _state = MqttConnectionState::DISCONNECTED;
+            scheduleReconnect();
+            return;
+        }
         Serial.printf("Connecting MQTT: %s:%d\n",
                        _configMgr->config.mqttServer,
                        _configMgr->config.mqttPort);
@@ -95,13 +123,48 @@ public:
 
         unsigned long now = millis();
 
+        // Drive espMqttClientAsync state machine. Critical: after
+        // disconnect(true), the client needs multiple loop() calls
+        // to progress through disconnectingTcp1 -> disconnectingTcp2
+        // -> disconnected. Without this, connect() returns false.
+        _client.loop();
+
+        // --- Reconnect scheduler ---
         if (_needsReconnect && _state == MqttConnectionState::DISCONNECTED) {
             if ((long)(now - _nextReconnectAt) >= 0) {
+                // Wait for espMqttClient to fully reach disconnected state.
+                // connect() requires _client.disconnected() == true.
+                if (!_client.disconnected()) {
+                    return;  // Try again next loop — _client.loop() above will advance state
+                }
                 _needsReconnect = false;
                 connect();
             }
         }
 
+        // --- RECONNECTING timeout ---
+        if (_state == MqttConnectionState::RECONNECTING &&
+            (long)(now - _reconnectingStartMs) > (long)MQTT_RECONNECTING_TIMEOUT_MS) {
+            Serial.println("MQTT reconnecting timeout");
+            _client.disconnect(true);
+            _state = MqttConnectionState::DISCONNECTED;
+            scheduleReconnect();
+        }
+
+        // --- Silence check: zombie connection detection ---
+        // If MQTT shows CONNECTED but no messages arrive for too long,
+        // the connection may be dead. Force reconnect.
+        if (_state == MqttConnectionState::CONNECTED &&
+            _lastMessageAt > 0 &&
+            (long)(now - _lastMessageAt) > (long)MQTT_CONNECTED_SILENCE_TIMEOUT_MS) {
+            Serial.printf("MQTT: no messages for %lus, forcing reconnect\n",
+                          (unsigned long)((now - _lastMessageAt) / 1000));
+            _client.disconnect(true);
+            _state = MqttConnectionState::DISCONNECTED;
+            scheduleReconnect();
+        }
+
+        // --- Device offline check ---
         if (now - _lastOfflineCheckAt >= 1000UL) {
             _lastOfflineCheckAt = now;
             _store->markOfflineExpired(now, getOfflineTimeoutMs());
@@ -196,17 +259,19 @@ private:
     MqttConnectionState _state = MqttConnectionState::DISCONNECTED;
     bool _needsReconnect = false;
     unsigned long _nextReconnectAt = 0;
+    unsigned long _disconnectedAt = 0;
     MonitorConfigManager* _configMgr = nullptr;
     DeviceStore* _store = nullptr;
     char _clientId[20];
     uint8_t _msgBuf[MQTT_MAX_PAYLOAD_BYTES];
     size_t _msgBufLen = 0;
-    uint8_t _reconnectFailureCount = 0;
+    uint8_t _consecutiveFailures = 0;
     unsigned long _lastRxLogAt = 0;
     uint16_t _rxMessageCount = 0;
     unsigned long _lastConnectedAt = 0;
     unsigned long _lastMessageAt = 0;
     unsigned long _lastOfflineCheckAt = 0;
+    unsigned long _reconnectingStartMs = 0;
 
     unsigned long getOfflineTimeoutMs() const {
         if (!_configMgr) {
@@ -224,12 +289,26 @@ private:
     }
 
     void scheduleReconnect() {
-        if (_reconnectFailureCount < 250) _reconnectFailureCount++;
-        uint32_t delayMs = computeMqttReconnectDelayMs(_reconnectFailureCount);
-        uint32_t jitter = random(0, 500);
-        _nextReconnectAt = millis() + delayMs + jitter;
+        // Prevent double-counting: RECONNECTING timeout and onDisconnect
+        // callback can both fire for the same failed connection attempt.
+        // If reconnect is already scheduled, don't increment or reschedule.
+        if (_needsReconnect) {
+            return;
+        }
+
+        if (_consecutiveFailures < 250) _consecutiveFailures++;
+        _disconnectedAt = millis();
+
+        // Mild backoff: 1s -> 2s -> 5s cap
+        uint32_t delayMs = MQTT_RECONNECT_BASE_MS << (_consecutiveFailures - 1);
+        if (delayMs > MQTT_RECONNECT_MAX_MS) {
+            delayMs = MQTT_RECONNECT_MAX_MS;
+        }
+
+        _nextReconnectAt = millis() + delayMs;
         _needsReconnect = true;
-        Serial.printf("MQTT retry in %lu ms\n", (unsigned long)(delayMs + jitter));
+        Serial.printf("MQTT retry in %lu ms (attempt %u)\n",
+                      (unsigned long)delayMs, _consecutiveFailures);
     }
 
     void subscribeConfiguredTopics() {

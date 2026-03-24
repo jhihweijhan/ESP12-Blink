@@ -68,6 +68,8 @@ private:
     bool _forceRedraw = true;
     bool _pendingVisibleUpdate = false;
     char _lastHostname[32] = "";
+    char _lastIpStr[20] = "";
+    MqttConnectionState _lastMqttState = MqttConnectionState::DISCONNECTED;
 
     void autoRotateIfNeeded(unsigned long now, uint8_t onlineCount) {
         if (!_config.config.autoCarousel || onlineCount <= 1) {
@@ -144,6 +146,8 @@ private:
         if (headerRedraw) {
             dirty = DIRTY_ALL;
             _tft.fillScreen(COLOR_BLACK);
+            _lastIpStr[0] = '\0';
+            _lastMqttState = MqttConnectionState::DISCONNECTED;
             _ui.drawDeviceHeader(alias, true);
 
             if (onlineCount > 1) {
@@ -268,20 +272,30 @@ private:
     void drawFooter(const MetricsFrameV2&, unsigned long now, unsigned long lastUpdateMs) {
         char buf[20];
 
+        // IP: only redraw when changed to avoid flicker
         IPAddress ip = WiFi.localIP();
         snprintf(buf, sizeof(buf), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-        _tft.drawStringCentered(204, buf, COLOR_YELLOW, COLOR_BLACK, 1);
+        if (strcmp(buf, _lastIpStr) != 0) {
+            strlcpy(_lastIpStr, buf, sizeof(_lastIpStr));
+            _tft.fillRect(0, 204, TFT_WIDTH, FONT_HEIGHT, COLOR_BLACK);
+            _tft.drawStringCentered(204, buf, COLOR_YELLOW, COLOR_BLACK, 1);
+        }
 
-        switch (_mqtt.getConnectionState()) {
-            case MqttConnectionState::CONNECTED:
-                _tft.drawStringPadded(0, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 78);
-                break;
-            case MqttConnectionState::RECONNECTING:
-                _tft.drawStringPadded(0, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 78);
-                break;
-            case MqttConnectionState::DISCONNECTED:
-                _tft.drawStringPadded(0, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 78);
-                break;
+        // MQTT status: only redraw when changed
+        MqttConnectionState mqttState = _mqtt.getConnectionState();
+        if (mqttState != _lastMqttState) {
+            _lastMqttState = mqttState;
+            switch (mqttState) {
+                case MqttConnectionState::CONNECTED:
+                    _tft.drawStringPadded(0, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 78);
+                    break;
+                case MqttConnectionState::RECONNECTING:
+                    _tft.drawStringPadded(0, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 78);
+                    break;
+                case MqttConnectionState::DISCONNECTED:
+                    _tft.drawStringPadded(0, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 78);
+                    break;
+            }
         }
 
         unsigned long ageSec = (now - lastUpdateMs) / 1000UL;
@@ -290,59 +304,86 @@ private:
     }
 
     void showNoDevice() {
-        if (!_forceRedraw) {
-            return;
+        if (_forceRedraw) {
+            _forceRedraw = false;
+            _lastHostname[0] = '\0';
+            _lastIpStr[0] = '\0';
+            _lastMqttState = MqttConnectionState::DISCONNECTED;
+
+            _tft.fillScreen(COLOR_BLACK);
+            _ui.drawDeviceHeader("Monitor", true);
+            _tft.drawStringCentered(100, "Waiting", COLOR_CYAN, COLOR_BLACK, 2);
+            _tft.drawStringCentered(130, "for metrics v2", COLOR_GRAY, COLOR_BLACK, 1);
         }
 
-        _forceRedraw = false;
-        _lastHostname[0] = '\0';
-
-        _tft.fillScreen(COLOR_BLACK);
-        _ui.drawDeviceHeader("Monitor", true);
-        _tft.drawStringCentered(100, "Waiting", COLOR_CYAN, COLOR_BLACK, 2);
-        _tft.drawStringCentered(130, "for metrics v2", COLOR_GRAY, COLOR_BLACK, 1);
-
+        // Update MQTT status and IP only when changed (avoid flicker)
         MqttConnectionState mqttState = _mqtt.getConnectionState();
-        if (mqttState == MqttConnectionState::RECONNECTING) {
-            _tft.drawStringCentered(160, "MQTT connecting...", COLOR_YELLOW, COLOR_BLACK, 1);
-        } else if (mqttState == MqttConnectionState::DISCONNECTED) {
-            _tft.drawStringCentered(160, "MQTT not connected", COLOR_RED, COLOR_BLACK, 1);
+        if (mqttState != _lastMqttState) {
+            _lastMqttState = mqttState;
+            _tft.fillRect(0, 160, TFT_WIDTH, FONT_HEIGHT, COLOR_BLACK);
+            if (mqttState == MqttConnectionState::RECONNECTING) {
+                _tft.drawStringCentered(160, "MQTT connecting...", COLOR_YELLOW, COLOR_BLACK, 1);
+            } else if (mqttState == MqttConnectionState::DISCONNECTED) {
+                _tft.drawStringCentered(160, "MQTT not connected", COLOR_RED, COLOR_BLACK, 1);
+            } else {
+                _tft.drawStringCentered(160, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1);
+            }
         }
 
-        String ip = WiFi.localIP().toString();
-        _tft.drawStringCentered(204, ip.c_str(), COLOR_YELLOW, COLOR_BLACK, 1);
+        char ipBuf[20];
+        IPAddress ip = WiFi.localIP();
+        snprintf(ipBuf, sizeof(ipBuf), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+        if (strcmp(ipBuf, _lastIpStr) != 0) {
+            strlcpy(_lastIpStr, ipBuf, sizeof(_lastIpStr));
+            _tft.fillRect(0, 204, TFT_WIDTH, FONT_HEIGHT, COLOR_BLACK);
+            _tft.drawStringCentered(204, ipBuf, COLOR_YELLOW, COLOR_BLACK, 1);
+        }
     }
 
     void showOfflineDevice(const char* hostname) {
         bool needRedraw = _forceRedraw || strcmp(_lastHostname, hostname) != 0;
-        if (!needRedraw) {
-            return;
+        if (needRedraw) {
+            DeviceConfig* cfg = _config.getOrCreateDevice(hostname);
+            const char* alias = (cfg && strlen(cfg->alias) > 0) ? cfg->alias : hostname;
+
+            _tft.fillScreen(COLOR_BLACK);
+            strlcpy(_lastHostname, hostname, sizeof(_lastHostname));
+            _lastIpStr[0] = '\0';
+            _lastMqttState = MqttConnectionState::DISCONNECTED;
+            _forceRedraw = false;
+
+            _ui.drawDeviceHeader(alias, false);
+            _tft.drawStringCentered(96, "OFFLINE", COLOR_RED, COLOR_BLACK, 2);
+            _tft.drawStringCentered(128, "No updates", COLOR_GRAY, COLOR_BLACK, 1);
         }
 
-        DeviceConfig* cfg = _config.getOrCreateDevice(hostname);
-        const char* alias = (cfg && strlen(cfg->alias) > 0) ? cfg->alias : hostname;
-
-        _tft.fillScreen(COLOR_BLACK);
-        strlcpy(_lastHostname, hostname, sizeof(_lastHostname));
-        _forceRedraw = false;
-
-        _ui.drawDeviceHeader(alias, false);
-        _tft.drawStringCentered(96, "OFFLINE", COLOR_RED, COLOR_BLACK, 2);
-        _tft.drawStringCentered(128, "No updates", COLOR_GRAY, COLOR_BLACK, 1);
-
-        switch (_mqtt.getConnectionState()) {
-            case MqttConnectionState::CONNECTED:
-                _tft.drawStringPadded(0, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 78);
-                break;
-            case MqttConnectionState::RECONNECTING:
-                _tft.drawStringPadded(0, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 78);
-                break;
-            case MqttConnectionState::DISCONNECTED:
-                _tft.drawStringPadded(0, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 78);
-                break;
+        // Dynamic footer: MQTT status + ago counter (updates every refresh)
+        MqttConnectionState mqttState = _mqtt.getConnectionState();
+        if (mqttState != _lastMqttState) {
+            _lastMqttState = mqttState;
+            switch (mqttState) {
+                case MqttConnectionState::CONNECTED:
+                    _tft.drawStringPadded(0, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 78);
+                    break;
+                case MqttConnectionState::RECONNECTING:
+                    _tft.drawStringPadded(0, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 78);
+                    break;
+                case MqttConnectionState::DISCONNECTED:
+                    _tft.drawStringPadded(0, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 78);
+                    break;
+            }
         }
 
-        _tft.drawStringPadded(168, 222, "OFFLINE", COLOR_RED, COLOR_BLACK, 1, 70);
+        // Show how long since last data
+        DeviceSlot* slot = _store.getByHostname(hostname);
+        if (slot && slot->lastUpdateMs > 0) {
+            unsigned long ageSec = (millis() - slot->lastUpdateMs) / 1000UL;
+            char buf[20];
+            snprintf(buf, sizeof(buf), "%lus ago", ageSec);
+            _tft.drawStringPadded(168, 222, buf, COLOR_RED, COLOR_BLACK, 1, 70);
+        } else {
+            _tft.drawStringPadded(168, 222, "---", COLOR_RED, COLOR_BLACK, 1, 70);
+        }
     }
 };
 
