@@ -73,8 +73,10 @@ public:
         }
 
         if (WiFi.status() != WL_CONNECTED) {
-            Serial.println("MQTT connect skipped: WiFi not connected");
-            scheduleReconnect();
+            // WiFi down — retry in 1s without incrementing failure count.
+            // Once WiFi comes back, we reconnect immediately.
+            _nextReconnectAt = millis() + MQTT_RECONNECT_BASE_MS;
+            _needsReconnect = true;
             return;
         }
 
@@ -128,6 +130,19 @@ public:
         // to progress through disconnectingTcp1 -> disconnectingTcp2
         // -> disconnected. Without this, connect() returns false.
         _client.loop();
+
+        // --- WiFi guard ---
+        // If WiFi drops, transition to DISCONNECTED immediately so we
+        // can reconnect as soon as WiFi comes back. Don't call
+        // _client.disconnect(true) — let espMqttClient detect the
+        // TCP loss on its own to avoid PCB issues.
+        if (_state == MqttConnectionState::CONNECTED && WiFi.status() != WL_CONNECTED) {
+            Serial.println("MQTT: WiFi lost, marking disconnected");
+            _state = MqttConnectionState::DISCONNECTED;
+            _consecutiveFailures = 0;  // Reset so we reconnect in 1s when WiFi returns
+            _nextReconnectAt = millis() + MQTT_RECONNECT_BASE_MS;
+            _needsReconnect = true;
+        }
 
         // --- Reconnect scheduler ---
         if (_needsReconnect && _state == MqttConnectionState::DISCONNECTED) {

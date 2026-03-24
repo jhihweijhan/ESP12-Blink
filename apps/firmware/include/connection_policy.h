@@ -26,8 +26,8 @@ static const uint16_t DEVICE_ONLINE_DIRTY_MASK = 1U << 5;
 static const uint32_t HEAP_LOG_INTERVAL_MS = 30000UL;
 static const uint32_t HEAP_WARN_MIN_BLOCK_BYTES = 4096UL;
 static const uint32_t MQTT_MIN_HEAP_FOR_CONNECT = 2048UL;
-static const uint32_t MQTT_RECONNECTING_TIMEOUT_MS = 10000UL;  // 10s TCP+MQTT handshake timeout
-static const uint32_t MQTT_CONNECTED_SILENCE_TIMEOUT_MS = 30000UL;  // 30s no messages -> force reconnect (sender @1Hz)
+static const uint32_t MQTT_RECONNECTING_TIMEOUT_MS = 5000UL;   // 5s TCP+MQTT handshake timeout
+static const uint32_t MQTT_CONNECTED_SILENCE_TIMEOUT_MS = 15000UL;  // 15s no messages -> force reconnect (sender @1Hz)
 
 static const char MQTT_SENDER_TOPIC_PREFIX[] = "sys/agents/";
 static const char MQTT_SENDER_TOPIC_SUFFIX[] = "/metrics/v2";

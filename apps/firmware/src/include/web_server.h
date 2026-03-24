@@ -410,6 +410,9 @@ private:
         doc["deviceCount"] = _store ? _store->deviceCount : 0;
         doc["onlineCount"] = (_store && _monitorConfig) ? _store->getOnlineCount(_monitorConfig) : 0;
         doc["wifiApplyState"] = wifiApplyStateToString();
+        doc["wifiRSSI"] = WiFi.RSSI();
+        doc["wifiChannel"] = WiFi.channel();
+        doc["uptimeMs"] = millis();
 
         uint32_t freeHeap = ESP.getFreeHeap();
         uint32_t maxBlock = ESP.getMaxFreeBlockSize();

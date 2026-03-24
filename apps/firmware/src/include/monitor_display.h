@@ -298,6 +298,11 @@ private:
             }
         }
 
+        // RSSI between MQTT and ago
+        int32_t rssi = WiFi.RSSI();
+        snprintf(buf, sizeof(buf), "%ld", rssi);
+        _tft.drawStringPadded(80, 222, buf, COLOR_GRAY, COLOR_BLACK, 1, 40);
+
         unsigned long ageSec = (now - lastUpdateMs) / 1000UL;
         snprintf(buf, sizeof(buf), "%lus ago", ageSec);
         _tft.drawStringPadded(168, 222, buf, COLOR_GRAY, COLOR_BLACK, 1, 70);
