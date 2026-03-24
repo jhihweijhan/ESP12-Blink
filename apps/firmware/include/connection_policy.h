@@ -5,6 +5,12 @@
 #include <stdint.h>
 #include <string.h>
 
+enum class MqttConnectionState : uint8_t {
+    DISCONNECTED = 0,
+    RECONNECTING = 1,
+    CONNECTED = 2
+};
+
 static const uint32_t MQTT_RECONNECT_BASE_MS = 1000UL;
 static const uint32_t MQTT_RECONNECT_MAX_MS = 60000UL;
 static const size_t MQTT_MAX_PAYLOAD_BYTES = 1024U;
