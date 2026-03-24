@@ -51,7 +51,6 @@ public:
         unsigned long now = millis();
 
         if (!_client.connected()) {
-            connected = false;
             if (_nextReconnectAt == 0 || (long)(now - _nextReconnectAt) >= 0) {
                 reconnect();
             }
@@ -60,7 +59,10 @@ public:
         }
 
         unsigned long offlineCheckNow = millis();
-        _store->markOfflineExpired(offlineCheckNow, getOfflineTimeoutMs());
+        if (offlineCheckNow - _lastOfflineCheckAt >= 1000UL) {
+            _lastOfflineCheckAt = offlineCheckNow;
+            _store->markOfflineExpired(offlineCheckNow, getOfflineTimeoutMs());
+        }
     }
 
     bool isConnected() {
@@ -114,30 +116,19 @@ public:
             return;
         }
 
-        bool isKnown = false;
-        bool enabled = false;
-        getDeviceConfigState(hostname, isKnown, enabled);
-
-        if (_configMgr && isKnown && !enabled &&
-            shouldAutoEnableDeviceOnSubscribedTopic(_configMgr->config.subscribedTopicCount) &&
-            isTopicInAllowlist(topic)) {
-            DeviceConfig* cfg = _configMgr->getOrCreateDevice(hostname);
-            if (cfg && !cfg->enabled) {
+        DeviceConfig* cfg = _configMgr->getOrCreateDevice(hostname);
+        if (cfg && !cfg->enabled) {
+            bool canAutoEnable = shouldAutoEnableDeviceOnSubscribedTopic(_configMgr->config.subscribedTopicCount) &&
+                                 isTopicInAllowlist(topic);
+            if (!canAutoEnable && !allowlistMode) {
+                canAutoEnable = true;
+            }
+            if (canAutoEnable) {
                 cfg->enabled = true;
                 _configMgr->markDirty();
-                enabled = true;
+            } else {
+                return;
             }
-        }
-
-        if (isKnown && !enabled) {
-            return;
-        }
-
-        DeviceConfig* cfg = _configMgr->getOrCreateDevice(hostname);
-        if (cfg && !cfg->enabled &&
-            (!allowlistMode || shouldAutoEnableDeviceOnSubscribedTopic(_configMgr->config.subscribedTopicCount))) {
-            cfg->enabled = true;
-            _configMgr->markDirty();
         }
 
         unsigned long now = millis();
@@ -174,7 +165,7 @@ private:
     uint16_t _rxMessageCount = 0;
     unsigned long _lastConnectedAt = 0;
     unsigned long _lastMessageAt = 0;
-    bool connected = false;
+    unsigned long _lastOfflineCheckAt = 0;
 
     unsigned long getOfflineTimeoutMs() const {
         if (!_configMgr) {
@@ -194,22 +185,6 @@ private:
     static void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
         if (_mqttTransportInstance) {
             _mqttTransportInstance->handleMessage(topic, payload, length);
-        }
-    }
-
-    void getDeviceConfigState(const char* hostname, bool& isKnown, bool& enabled) {
-        isKnown = false;
-        enabled = false;
-        if (!_configMgr) {
-            return;
-        }
-
-        for (uint8_t i = 0; i < _configMgr->config.deviceCount; i++) {
-            if (strcmp(_configMgr->config.devices[i].hostname, hostname) == 0) {
-                isKnown = true;
-                enabled = _configMgr->config.devices[i].enabled;
-                return;
-            }
         }
     }
 
@@ -288,7 +263,6 @@ private:
         }
 
         if (success) {
-            connected = true;
             _reconnectFailureCount = 0;
             _nextReconnectAt = 0;
             _lastConnectedAt = millis();
@@ -297,7 +271,6 @@ private:
             return;
         }
 
-        connected = false;
         if (_reconnectFailureCount < 250) {
             _reconnectFailureCount++;
         }

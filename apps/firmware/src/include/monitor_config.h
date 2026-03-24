@@ -101,23 +101,18 @@ public:
         }
     }
 
-private:
-    bool _needsSave = false;
-    unsigned long _lastSaveTime = 0;
-
 public:
-
     void markDirty() {
         _needsSave = true;
     }
 
     void setDefaults() {
         // MQTT 預設
-        strcpy(config.mqttServer, "");
+        config.mqttServer[0] = '\0';
         config.mqttPort = 1883;
-        strcpy(config.mqttUser, "");
-        strcpy(config.mqttPass, "");
-        strcpy(config.mqttTopic, "sys/agents/+/metrics/v2");
+        config.mqttUser[0] = '\0';
+        config.mqttPass[0] = '\0';
+        strlcpy(config.mqttTopic, MQTT_SENDER_DISCOVERY_TOPIC, sizeof(config.mqttTopic));
         config.subscribedTopicCount = 0;
 
         // 設備預設
@@ -302,6 +297,10 @@ public:
 
         return nullptr;
     }
+
+private:
+    bool _needsSave = false;
+    unsigned long _lastSaveTime = 0;
 };
 
 #endif

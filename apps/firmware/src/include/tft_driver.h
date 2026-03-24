@@ -74,11 +74,13 @@ public:
 
         uint8_t hi = color >> 8;
         uint8_t lo = color & 0xFF;
-        for (uint32_t i = 0; i < (uint32_t)TFT_WIDTH * TFT_HEIGHT; i++) {
+        const uint32_t total = (uint32_t)TFT_WIDTH * TFT_HEIGHT;
+        for (uint32_t i = 0; i < total; i++) {
             SPI.transfer(hi);
             SPI.transfer(lo);
         }
         digitalWrite(TFT_CS, HIGH);
+        yield();
     }
 
     void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {

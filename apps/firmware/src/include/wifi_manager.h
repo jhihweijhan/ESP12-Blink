@@ -158,10 +158,12 @@ public:
         delay(30);
         WiFi.disconnect();
         delay(80);
-        int networkCount = WiFi.scanNetworks(false, true);
+
+        // 嘗試使用已完成的非同步掃描結果進行 BSSID 定向連線
+        int networkCount = WiFi.scanComplete();
         int matchedIndex = -1;
         if (networkCount > 0) {
-            Serial.printf("掃描到 %d 個 AP\n", networkCount);
+            Serial.printf("使用快取掃描結果: %d 個 AP\n", networkCount);
             for (int i = 0; i < networkCount; i++) {
                 String foundSsid = WiFi.SSID(i);
                 int32_t rssi = WiFi.RSSI(i);
@@ -171,8 +173,6 @@ public:
                     matchedIndex = i;
                 }
             }
-        } else {
-            Serial.println("掃描 AP 失敗或未找到任何 AP");
         }
 
         if (matchedIndex >= 0) {
@@ -181,7 +181,7 @@ public:
             Serial.printf("使用 BSSID 定向連線: ch=%ld\n", (long)channel);
             WiFi.begin(ssid.c_str(), password.c_str(), channel, bssid, true);
         } else {
-            Serial.println("未在掃描結果找到目標 SSID，改用一般連線");
+            Serial.println("無掃描結果，改用一般連線");
             WiFi.begin(ssid.c_str(), password.c_str());
         }
         WiFi.scanDelete();
@@ -266,28 +266,6 @@ public:
     void cancelConnect() {
         _connectInProgress = false;
         WiFi.disconnect();
-    }
-
-    bool connectWiFi() {
-        if (!startConnectWiFi()) return false;
-        while (true) {
-            ConnectResult result = pollConnect();
-            if (result == CONNECT_SUCCESS) return true;
-            if (result == CONNECT_TIMEOUT || result == CONNECT_FAILED) return false;
-            delay(10);
-            yield();
-        }
-    }
-
-    bool connectStoredWiFi() {
-        if (!startConnectStoredWiFi()) return false;
-        while (true) {
-            ConnectResult result = pollConnect();
-            if (result == CONNECT_SUCCESS) return true;
-            if (result == CONNECT_TIMEOUT || result == CONNECT_FAILED) return false;
-            delay(10);
-            yield();
-        }
     }
 
     void startAP() {

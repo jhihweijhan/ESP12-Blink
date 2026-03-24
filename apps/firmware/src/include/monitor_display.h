@@ -43,12 +43,13 @@ public:
 
     void loop() {
         const unsigned long now = millis();
-        autoRotateIfNeeded(now);
+        uint8_t onlineCount = _store.getOnlineCount(&_config);
+        autoRotateIfNeeded(now, onlineCount);
 
         const uint16_t refreshInterval = computeDisplayRefreshIntervalMs(_pendingVisibleUpdate, _forceRedraw);
         if (now - _lastRefresh >= refreshInterval) {
             _lastRefresh = now;
-            refresh(now);
+            refresh(now, onlineCount);
             _pendingVisibleUpdate = false;
         }
     }
@@ -68,8 +69,7 @@ private:
     bool _pendingVisibleUpdate = false;
     char _lastHostname[32] = "";
 
-    void autoRotateIfNeeded(unsigned long now) {
-        uint8_t onlineCount = _store.getOnlineCount(&_config);
+    void autoRotateIfNeeded(unsigned long now, uint8_t onlineCount) {
         if (!_config.config.autoCarousel || onlineCount <= 1) {
             return;
         }
@@ -91,8 +91,7 @@ private:
         }
     }
 
-    void refresh(unsigned long now) {
-        uint8_t onlineCount = _store.getOnlineCount(&_config);
+    void refresh(unsigned long now, uint8_t onlineCount) {
         if (onlineCount > 0) {
             if (_currentDevice >= onlineCount) {
                 _currentDevice = 0;
@@ -264,8 +263,9 @@ private:
     void drawFooter(const MetricsFrameV2&, unsigned long now, unsigned long lastUpdateMs) {
         char buf[20];
 
-        String ip = WiFi.localIP().toString();
-        _tft.drawStringCentered(204, ip.c_str(), COLOR_YELLOW, COLOR_BLACK, 1);
+        IPAddress ip = WiFi.localIP();
+        snprintf(buf, sizeof(buf), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+        _tft.drawStringCentered(204, buf, COLOR_YELLOW, COLOR_BLACK, 1);
 
         if (_mqtt.isConnectedForDisplay()) {
             _tft.drawString(8, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1);
