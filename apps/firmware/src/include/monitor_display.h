@@ -267,10 +267,16 @@ private:
         snprintf(buf, sizeof(buf), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
         _tft.drawStringCentered(204, buf, COLOR_YELLOW, COLOR_BLACK, 1);
 
-        if (_mqtt.isConnectedForDisplay()) {
-            _tft.drawString(8, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1);
-        } else {
-            _tft.drawString(8, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1);
+        switch (_mqtt.getConnectionState()) {
+            case MqttConnectionState::CONNECTED:
+                _tft.drawStringPadded(8, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 70);
+                break;
+            case MqttConnectionState::RECONNECTING:
+                _tft.drawStringPadded(8, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 70);
+                break;
+            case MqttConnectionState::DISCONNECTED:
+                _tft.drawStringPadded(8, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 70);
+                break;
         }
 
         unsigned long ageSec = (now - lastUpdateMs) / 1000UL;
@@ -291,7 +297,10 @@ private:
         _tft.drawStringCentered(100, "Waiting", COLOR_CYAN, COLOR_BLACK, 2);
         _tft.drawStringCentered(130, "for metrics v2", COLOR_GRAY, COLOR_BLACK, 1);
 
-        if (!_mqtt.isConnectedForDisplay()) {
+        MqttConnectionState mqttState = _mqtt.getConnectionState();
+        if (mqttState == MqttConnectionState::RECONNECTING) {
+            _tft.drawStringCentered(160, "MQTT connecting...", COLOR_YELLOW, COLOR_BLACK, 1);
+        } else if (mqttState == MqttConnectionState::DISCONNECTED) {
             _tft.drawStringCentered(160, "MQTT not connected", COLOR_RED, COLOR_BLACK, 1);
         }
 
@@ -316,10 +325,16 @@ private:
         _tft.drawStringCentered(96, "OFFLINE", COLOR_RED, COLOR_BLACK, 2);
         _tft.drawStringCentered(128, "No updates", COLOR_GRAY, COLOR_BLACK, 1);
 
-        if (_mqtt.isConnectedForDisplay()) {
-            _tft.drawString(8, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1);
-        } else {
-            _tft.drawString(8, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1);
+        switch (_mqtt.getConnectionState()) {
+            case MqttConnectionState::CONNECTED:
+                _tft.drawStringPadded(8, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 70);
+                break;
+            case MqttConnectionState::RECONNECTING:
+                _tft.drawStringPadded(8, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 70);
+                break;
+            case MqttConnectionState::DISCONNECTED:
+                _tft.drawStringPadded(8, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 70);
+                break;
         }
 
         _tft.drawStringPadded(168, 222, "OFFLINE", COLOR_RED, COLOR_BLACK, 1, 70);

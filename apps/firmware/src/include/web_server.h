@@ -401,6 +401,12 @@ private:
         JsonDocument doc;
 
         doc["mqttConnected"] = _mqtt ? _mqtt->isConnected() : false;
+        if (_mqtt) {
+            MqttConnectionState state = _mqtt->getConnectionState();
+            doc["mqttState"] = (state == MqttConnectionState::CONNECTED) ? "connected" :
+                               (state == MqttConnectionState::RECONNECTING) ? "reconnecting" :
+                               "disconnected";
+        }
         doc["deviceCount"] = _store ? _store->deviceCount : 0;
         doc["onlineCount"] = (_store && _monitorConfig) ? _store->getOnlineCount(_monitorConfig) : 0;
         doc["wifiApplyState"] = wifiApplyStateToString();

@@ -32,9 +32,6 @@ public:
 
         _client.onDisconnect([this](espMqttClientTypes::DisconnectReason reason) {
             Serial.printf("MQTT disconnected: %u\n", static_cast<uint8_t>(reason));
-            if (_state == MqttConnectionState::CONNECTED) {
-                _lastDisconnectedAt = millis();
-            }
             _state = MqttConnectionState::DISCONNECTED;
             scheduleReconnect();
         });
@@ -96,13 +93,6 @@ public:
 
     MqttConnectionState getConnectionState() const { return _state; }
     bool isConnected() const { return _state == MqttConnectionState::CONNECTED; }
-
-    bool isConnectedForDisplay() const {
-        if (_state == MqttConnectionState::CONNECTED) return true;
-        if (_state == MqttConnectionState::RECONNECTING) return true;
-        unsigned long now = millis();
-        return !shouldShowMqttDisconnectedStatus(false, now, _lastConnectedAt, _lastMessageAt);
-    }
 
     bool isTopicInAllowlist(const char* topic) const {
         if (!_configMgr || !topic) {
@@ -189,7 +179,6 @@ private:
     MqttConnectionState _state = MqttConnectionState::DISCONNECTED;
     bool _needsReconnect = false;
     unsigned long _nextReconnectAt = 0;
-    unsigned long _lastDisconnectedAt = 0;
     MonitorConfigManager* _configMgr = nullptr;
     DeviceStore* _store = nullptr;
     uint8_t _reconnectFailureCount = 0;
