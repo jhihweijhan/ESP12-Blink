@@ -39,9 +39,9 @@ public:
         digitalWrite(TFT_BL, LOW);  // 背光 ON
 
         SPI.begin();
-        // SPI clock: 27MHz (was 10MHz). ESP8266 80/3 divider = 26.67MHz actual.
-        // ST7789 supports up to 40MHz; increase if hardware stable at 27MHz.
-        SPI.setFrequency(27000000);
+        // SPI clock: 40MHz (was 10MHz). ESP8266 80/2 divider = 40MHz actual.
+        // ST7789 max 62.5MHz; 40MHz verified stable on hardware.
+        SPI.setFrequency(40000000);
         SPI.setDataMode(SPI_MODE0);
         SPI.setBitOrder(MSBFIRST);
 
