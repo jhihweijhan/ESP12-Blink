@@ -316,12 +316,12 @@ void loop() {
 
     if (currentMode == MODE_MONITOR) {
         mqttTransport.loop();
-        yield();
+        delay(1);
         monitorConfig.loop();
-        yield();
         if (monitorDisplay) {
             monitorDisplay->loop();
         }
+        delay(1);
 
         // Heap fragmentation monitoring (STAB-01)
         if (now - lastHeapLogAt >= HEAP_LOG_INTERVAL_MS) {
@@ -336,6 +336,5 @@ void loop() {
         }
     }
 
-    yield();
-    delay(2);
+    delay(1);
 }

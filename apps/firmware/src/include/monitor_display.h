@@ -161,18 +161,23 @@ private:
 
         if (dirty & DIRTY_CPU) {
             drawCpuRow(frame, th);
+            delay(1);
         }
         if (dirty & DIRTY_RAM) {
             drawRamRow(frame, th);
+            delay(1);
         }
         if (dirty & DIRTY_GPU) {
             drawGpuRows(frame, th);
+            delay(1);
         }
         if (dirty & DIRTY_NET) {
             drawNetRow(frame);
+            delay(1);
         }
         if (dirty & DIRTY_DISK) {
             drawDiskRow(frame);
+            delay(1);
         }
 
         if (headerRedraw || dirty != DIRTY_NONE || now - _lastFooterUpdate >= 1000UL) {
@@ -269,13 +274,13 @@ private:
 
         switch (_mqtt.getConnectionState()) {
             case MqttConnectionState::CONNECTED:
-                _tft.drawStringPadded(8, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 70);
+                _tft.drawStringPadded(0, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 78);
                 break;
             case MqttConnectionState::RECONNECTING:
-                _tft.drawStringPadded(8, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 70);
+                _tft.drawStringPadded(0, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 78);
                 break;
             case MqttConnectionState::DISCONNECTED:
-                _tft.drawStringPadded(8, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 70);
+                _tft.drawStringPadded(0, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 78);
                 break;
         }
 
@@ -327,13 +332,13 @@ private:
 
         switch (_mqtt.getConnectionState()) {
             case MqttConnectionState::CONNECTED:
-                _tft.drawStringPadded(8, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 70);
+                _tft.drawStringPadded(0, 222, "MQTT OK", COLOR_GREEN, COLOR_BLACK, 1, 78);
                 break;
             case MqttConnectionState::RECONNECTING:
-                _tft.drawStringPadded(8, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 70);
+                _tft.drawStringPadded(0, 222, "MQTT ..", COLOR_YELLOW, COLOR_BLACK, 1, 78);
                 break;
             case MqttConnectionState::DISCONNECTED:
-                _tft.drawStringPadded(8, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 70);
+                _tft.drawStringPadded(0, 222, "MQTT --", COLOR_RED, COLOR_BLACK, 1, 78);
                 break;
         }
 

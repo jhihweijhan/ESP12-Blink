@@ -41,9 +41,25 @@ public:
             const char* topic,
             const uint8_t* payload,
             size_t len, size_t index, size_t total) {
+            if (total > MQTT_MAX_PAYLOAD_BYTES) {
+                return;
+            }
             if (index == 0 && len == total) {
                 handleMessage(const_cast<char*>(topic),
                               const_cast<uint8_t*>(payload), static_cast<unsigned int>(len));
+            } else {
+                if (index == 0) {
+                    _msgBufLen = 0;
+                }
+                if (_msgBufLen + len <= MQTT_MAX_PAYLOAD_BYTES) {
+                    memcpy(_msgBuf + _msgBufLen, payload, len);
+                    _msgBufLen += len;
+                }
+                if (_msgBufLen == total) {
+                    handleMessage(const_cast<char*>(topic), _msgBuf,
+                                  static_cast<unsigned int>(_msgBufLen));
+                    _msgBufLen = 0;
+                }
             }
         });
     }
@@ -55,9 +71,10 @@ public:
         }
 
         _client.setServer(_configMgr->config.mqttServer, _configMgr->config.mqttPort);
+        _client.setKeepAlive(120);
 
-        String clientId = "ESP12-v2-" + String(random(0xffff), HEX);
-        _client.setClientId(clientId.c_str());
+        snprintf(_clientId, sizeof(_clientId), "ESP12-v2-%04x", (unsigned)random(0xffff));
+        _client.setClientId(_clientId);
 
         if (strlen(_configMgr->config.mqttUser) > 0) {
             _client.setCredentials(_configMgr->config.mqttUser,
@@ -181,6 +198,9 @@ private:
     unsigned long _nextReconnectAt = 0;
     MonitorConfigManager* _configMgr = nullptr;
     DeviceStore* _store = nullptr;
+    char _clientId[20];
+    uint8_t _msgBuf[MQTT_MAX_PAYLOAD_BYTES];
+    size_t _msgBufLen = 0;
     uint8_t _reconnectFailureCount = 0;
     unsigned long _lastRxLogAt = 0;
     uint16_t _rxMessageCount = 0;

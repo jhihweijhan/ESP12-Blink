@@ -89,6 +89,7 @@ public:
 
         for (uint32_t i = 0; i < fullChunks; i++) {
             SPI.writeBytes(fillBuf, FILL_BUF_PIXELS * 2);
+            if ((i & 0x3F) == 0x3F) yield();  // 每 64 chunks (~2KB) 讓出 CPU
         }
         if (remainder > 0) {
             SPI.writeBytes(fillBuf, remainder * 2);
