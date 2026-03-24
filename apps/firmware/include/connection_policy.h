@@ -23,10 +23,17 @@ static const uint16_t DISPLAY_FORCE_REDRAW_REFRESH_MS = 90U;
 static const uint16_t MQTT_RX_LOG_INTERVAL_MS = 2000U;
 static const uint16_t MQTT_STATUS_DISCONNECT_GRACE_MS = 5000U;
 static const uint16_t DEVICE_ONLINE_DIRTY_MASK = 1U << 5;
+static const uint32_t HEAP_LOG_INTERVAL_MS = 30000UL;
+static const uint32_t HEAP_WARN_MIN_BLOCK_BYTES = 4096UL;
 
 static const char MQTT_SENDER_TOPIC_PREFIX[] = "sys/agents/";
 static const char MQTT_SENDER_TOPIC_SUFFIX[] = "/metrics/v2";
 static const char MQTT_SENDER_DISCOVERY_TOPIC[] = "sys/agents/+/metrics/v2";
+
+static inline uint8_t computeHeapFragmentation(uint32_t freeHeap, uint32_t maxBlock) {
+    if (freeHeap == 0) return 100;
+    return (uint8_t)(100 - (maxBlock * 100 / freeHeap));
+}
 
 static inline uint32_t computeMqttReconnectDelayMs(uint8_t failureCount) {
     if (failureCount > 31) {

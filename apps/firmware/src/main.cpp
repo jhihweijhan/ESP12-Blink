@@ -17,6 +17,7 @@ MonitorConfigManager monitorConfig;
 DeviceStore deviceStore;
 MQTTTransport mqttTransport;
 MonitorDisplay* monitorDisplay = nullptr;
+unsigned long lastHeapLogAt = 0;
 
 void onMqttMetricsReceived(const char* hostname) {
     if (monitorDisplay) {
@@ -297,6 +298,8 @@ void setup() {
 }
 
 void loop() {
+    unsigned long now = millis();
+
     if (startupState != STARTUP_DONE) {
         processStartup();
         if (webServer) {
@@ -318,6 +321,18 @@ void loop() {
         yield();
         if (monitorDisplay) {
             monitorDisplay->loop();
+        }
+
+        // Heap fragmentation monitoring (STAB-01)
+        if (now - lastHeapLogAt >= HEAP_LOG_INTERVAL_MS) {
+            lastHeapLogAt = now;
+            uint32_t freeHeap = ESP.getFreeHeap();
+            uint32_t maxBlock = ESP.getMaxFreeBlockSize();
+            uint8_t frag = computeHeapFragmentation(freeHeap, maxBlock);
+            Serial.printf("HEAP free=%u max_block=%u frag=%u%%\n", freeHeap, maxBlock, frag);
+            if (maxBlock < HEAP_WARN_MIN_BLOCK_BYTES) {
+                Serial.printf("HEAP WARNING: max_block %u < %u threshold\n", maxBlock, (uint32_t)HEAP_WARN_MIN_BLOCK_BYTES);
+            }
         }
     }
 

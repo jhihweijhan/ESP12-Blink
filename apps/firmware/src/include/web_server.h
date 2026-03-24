@@ -411,6 +411,12 @@ private:
         doc["onlineCount"] = (_store && _monitorConfig) ? _store->getOnlineCount(_monitorConfig) : 0;
         doc["wifiApplyState"] = wifiApplyStateToString();
 
+        uint32_t freeHeap = ESP.getFreeHeap();
+        uint32_t maxBlock = ESP.getMaxFreeBlockSize();
+        doc["freeHeap"] = freeHeap;
+        doc["maxBlock"] = maxBlock;
+        doc["heapFragmentation"] = computeHeapFragmentation(freeHeap, maxBlock);
+
         if (_store) {
             JsonArray devices = doc["devices"].to<JsonArray>();
             for (uint8_t i = 0; i < MAX_DEVICES; i++) {
