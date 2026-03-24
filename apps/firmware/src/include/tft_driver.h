@@ -119,18 +119,32 @@ public:
     void drawChar(int16_t x, int16_t y, char c, uint16_t color, uint16_t bg, uint8_t size = 1) {
         if (c < FONT_FIRST_CHAR || c > FONT_LAST_CHAR) return;
 
-        uint16_t index = (c - FONT_FIRST_CHAR) * FONT_HEIGHT;
+        if (size == 1) {
+            uint16_t index = (c - FONT_FIRST_CHAR) * FONT_HEIGHT;
+            uint8_t rowBuf[FONT_WIDTH * 2];
+            uint8_t hiFg = color >> 8, loFg = color & 0xFF;
+            uint8_t hiBg = bg >> 8, loBg = bg & 0xFF;
 
-        for (uint8_t row = 0; row < FONT_HEIGHT; row++) {
-            uint8_t line = pgm_read_byte(&font_8x16[index + row]);
-            for (uint8_t col = 0; col < FONT_WIDTH; col++) {
-                uint16_t px_color = (line & (0x80 >> col)) ? color : bg;
-                if (size == 1) {
-                    drawPixel(x + col, y + row, px_color);
-                } else {
-                    fillRect(x + col * size, y + row * size, size, size, px_color);
+            for (uint8_t row = 0; row < FONT_HEIGHT; row++) {
+                uint8_t line = pgm_read_byte(&font_8x16[index + row]);
+                for (uint8_t col = 0; col < FONT_WIDTH; col++) {
+                    uint16_t idx = col * 2;
+                    if (line & (0x80 >> col)) {
+                        rowBuf[idx] = hiFg;
+                        rowBuf[idx + 1] = loFg;
+                    } else {
+                        rowBuf[idx] = hiBg;
+                        rowBuf[idx + 1] = loBg;
+                    }
                 }
+                setAddrWindow(x, y + row, x + FONT_WIDTH - 1, y + row);
+                digitalWrite(TFT_DC, HIGH);
+                digitalWrite(TFT_CS, LOW);
+                SPI.writeBytes(rowBuf, FONT_WIDTH * 2);
+                digitalWrite(TFT_CS, HIGH);
             }
+        } else {
+            drawCharScaled(x, y, c, color, bg, size);
         }
     }
 
@@ -175,6 +189,43 @@ private:
         digitalWrite(TFT_CS, LOW);
         SPI.transfer(data);
         digitalWrite(TFT_CS, HIGH);
+    }
+
+    void drawCharScaled(int16_t x, int16_t y, char c, uint16_t color, uint16_t bg, uint8_t size) {
+        uint16_t index = (c - FONT_FIRST_CHAR) * FONT_HEIGHT;
+        uint16_t scaledWidth = FONT_WIDTH * size;
+        // Stack buffer for one scaled row: max size=4 => 32 pixels * 2 = 64 bytes
+        uint8_t rowBuf[FONT_WIDTH * 4 * 2];  // 64 bytes max
+        uint16_t rowBytes = scaledWidth * 2;
+        if (size > 4) size = 4;  // safety clamp
+
+        uint8_t hiFg = color >> 8, loFg = color & 0xFF;
+        uint8_t hiBg = bg >> 8, loBg = bg & 0xFF;
+
+        for (uint8_t row = 0; row < FONT_HEIGHT; row++) {
+            uint8_t line = pgm_read_byte(&font_8x16[index + row]);
+
+            // Build scaled row buffer
+            for (uint8_t col = 0; col < FONT_WIDTH; col++) {
+                bool fg = line & (0x80 >> col);
+                for (uint8_t sx = 0; sx < size; sx++) {
+                    uint16_t idx = (col * size + sx) * 2;
+                    rowBuf[idx]     = fg ? hiFg : hiBg;
+                    rowBuf[idx + 1] = fg ? loFg : loBg;
+                }
+            }
+
+            // Set address window covering size rows vertically
+            int16_t py = y + row * size;
+            setAddrWindow(x, py, x + scaledWidth - 1, py + size - 1);
+            digitalWrite(TFT_DC, HIGH);
+            digitalWrite(TFT_CS, LOW);
+            // Write same row data `size` times for vertical scaling
+            for (uint8_t sy = 0; sy < size; sy++) {
+                SPI.writeBytes(rowBuf, rowBytes);
+            }
+            digitalWrite(TFT_CS, HIGH);
+        }
     }
 
     void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
