@@ -10,6 +10,7 @@
 #include "device_store.h"
 #include "html_monitor_gz.h"
 #include "html_setup_wizard_gz.h"
+#include "html_status_dashboard_gz.h"
 #include "html_wifi_setup_gz.h"
 #include "monitor_config.h"
 #include "mqtt_transport.h"
@@ -34,6 +35,15 @@ public:
     void loop() {
         processPendingWifiApply();
         processPendingMqttTest();
+
+        // SSE 定期推送
+        if (_statusEvents.count() > 0) {
+            unsigned long now = millis();
+            if ((long)(now - _lastSSEPushMs) >= (long)SSE_PUSH_INTERVAL_MS) {
+                _lastSSEPushMs = now;
+                pushStatusSSE();
+            }
+        }
 
         if (_pendingRestart && millis() >= _restartAt) {
             Serial.println("Restarting...");
@@ -159,6 +169,21 @@ public:
             }
         });
 
+        // SSE 狀態面板
+        _statusEvents.onConnect([this](AsyncEventSourceClient *client) {
+            if (_statusEvents.count() > SSE_MAX_CLIENTS) {
+                Serial.println("SSE: client limit reached");
+                return;
+            }
+            Serial.printf("SSE: client connected (%d total)\n", _statusEvents.count());
+            pushStatusSSE();
+        });
+        _server.addHandler(&_statusEvents);
+
+        _server.on("/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
+            sendGzipPage(request, HTML_STATUS_DASHBOARD_GZ, HTML_STATUS_DASHBOARD_GZ_LEN);
+        });
+
         _server.begin();
         Serial.println("Web Server started");
     }
@@ -201,6 +226,13 @@ private:
     unsigned long _mqttTestStartMs = 0;
     static const unsigned long MQTT_TEST_TIMEOUT_MS = 3000;
     WiFiClient _testClient;
+
+    // SSE 狀態推送
+    AsyncEventSource _statusEvents{"/events"};
+    unsigned long _lastSSEPushMs = 0;
+    static const unsigned long SSE_PUSH_INTERVAL_MS = 2000;
+    static const uint8_t SSE_MAX_CLIENTS = 2;
+    static const uint32_t SSE_MIN_HEAP_BYTES = 8192;
 
     static void sendGzipPage(AsyncWebServerRequest* request,
                              const uint8_t* data, size_t len) {
@@ -528,6 +560,58 @@ private:
         String json;
         serializeJson(doc, json);
         request->send(200, "application/json", json);
+    }
+
+    void pushStatusSSE() {
+        if (_statusEvents.count() == 0) return;
+
+        uint32_t freeHeap = ESP.getFreeHeap();
+        uint32_t maxBlock = ESP.getMaxFreeBlockSize();
+
+        // Heap 保護: heap 過低時暫停推送
+        if (maxBlock < SSE_MIN_HEAP_BYTES) {
+            Serial.println("SSE: skipping push, low heap");
+            return;
+        }
+
+        // 使用 snprintf 組裝 JSON 避免 ArduinoJson 動態分配
+        char buf[384];
+        int pos = 0;
+
+        uint8_t mqttState = _mqtt ? (uint8_t)_mqtt->getConnectionState() : 0;
+        uint8_t fragPct = computeHeapFragmentation(freeHeap, maxBlock);
+        int32_t rssi = WiFi.RSSI();
+        uint32_t uptimeSec = millis() / 1000;
+        uint8_t devCount = _store ? _store->deviceCount : 0;
+        uint8_t onlineCount = (_store && _monitorConfig) ? _store->getOnlineCount(_monitorConfig) : 0;
+
+        pos += snprintf(buf + pos, sizeof(buf) - pos,
+            "{\"mqtt\":%u,\"heap\":%u,\"maxBlk\":%u,\"frag\":%u,"
+            "\"rssi\":%d,\"up\":%u,\"devCnt\":%u,\"online\":%u",
+            mqttState, freeHeap, maxBlock, fragPct,
+            rssi, uptimeSec, devCount, onlineCount);
+
+        // Per-device 簡要資料
+        if (_store && pos < (int)(sizeof(buf) - 20)) {
+            pos += snprintf(buf + pos, sizeof(buf) - pos, ",\"d\":[");
+            bool first = true;
+            for (uint8_t i = 0; i < MAX_DEVICES && pos < (int)(sizeof(buf) - 60); i++) {
+                DeviceSlot* slot = _store->getByIndex(i);
+                if (!slot) continue;
+                if (!first) buf[pos++] = ',';
+                first = false;
+                pos += snprintf(buf + pos, sizeof(buf) - pos,
+                    "{\"h\":\"%s\",\"on\":%s,\"cpu\":%d,\"ram\":%d}",
+                    slot->hostname,
+                    slot->online ? "true" : "false",
+                    roundedPercent(slot->frame.cpuPctX10),
+                    roundedPercent(slot->frame.ramPctX10));
+            }
+            pos += snprintf(buf + pos, sizeof(buf) - pos, "]");
+        }
+
+        pos += snprintf(buf + pos, sizeof(buf) - pos, "}");
+        _statusEvents.send(buf, "status", millis());
     }
 
     void processPendingWifiApply() {
