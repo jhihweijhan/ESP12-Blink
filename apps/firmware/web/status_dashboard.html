@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mochi Status</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:16px}
+    .container{max-width:560px;margin:0 auto}
+    header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px}
+    h1{text-align:center;color:#00d9ff;font-size:22px}
+    .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+    .dot.connected{background:#00c853}
+    .dot.disconnected{background:#ff5252}
+    .dot.online{background:#00c853}
+    .dot.offline{background:#555}
+    .dot.reconnecting{background:#ffab00}
+
+    /* Overview grid */
+    .overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+    .card{background:#16213e;border-radius:12px;padding:16px}
+    .card-label{font-size:12px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+    .card-value{font-size:22px;font-weight:700;color:#fff}
+    .card-sub{font-size:12px;color:#888;margin-top:4px}
+
+    /* Signal bars */
+    .signal-bars{display:inline-flex;align-items:flex-end;gap:2px;height:16px;margin-left:8px;vertical-align:middle}
+    .signal-bars span{width:4px;background:#333;border-radius:1px}
+    .signal-bars span.active{background:#00c853}
+    .signal-bars span.warn{background:#ffab00}
+    .signal-bars span.poor{background:#ff5252}
+    .signal-bars span:nth-child(1){height:4px}
+    .signal-bars span:nth-child(2){height:7px}
+    .signal-bars span:nth-child(3){height:10px}
+    .signal-bars span:nth-child(4){height:13px}
+    .signal-bars span:nth-child(5){height:16px}
+
+    /* Progress bar */
+    .bar-track{width:100%;height:6px;background:#333;border-radius:3px;margin-top:6px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:3px;transition:width .3s}
+    .bar-fill.green{background:#00c853}
+    .bar-fill.yellow{background:#ffab00}
+    .bar-fill.red{background:#ff5252}
+
+    /* MQTT state colors */
+    .mqtt-connected{color:#00c853}
+    .mqtt-reconnecting{color:#ffab00}
+    .mqtt-disconnected{color:#ff5252}
+
+    /* Device list */
+    .section{margin-bottom:16px}
+    .section-title{font-size:15px;color:#00d9ff;margin-bottom:10px;font-weight:600}
+    .dev-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#16213e;border-radius:8px;margin-bottom:6px}
+    .dev-host{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dev-metric{font-size:13px;color:#aaa;min-width:70px;text-align:right}
+    .empty{text-align:center;color:#666;padding:20px;font-size:14px}
+
+    /* Diagnostics */
+    .diag-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+    .diag-toggle .arrow{transition:transform .2s;font-size:12px;color:#888}
+    .diag-toggle .arrow.collapsed{transform:rotate(-90deg)}
+    .diag-body{overflow:hidden;transition:max-height .3s;max-height:500px}
+    .diag-body.collapsed{max-height:0}
+    .diag-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #1a1a2e;font-size:13px}
+    .diag-label{color:#888}
+    .diag-val{color:#e0e0e0;font-weight:500}
+    .color-green{color:#00c853}
+    .color-yellow{color:#ffab00}
+    .color-red{color:#ff5252}
+
+    /* Footer nav */
+    .nav-footer{display:flex;justify-content:center;gap:20px;margin-top:20px;padding-top:16px;border-top:1px solid #222}
+    .nav-footer a{color:#00d9ff;text-decoration:none;font-size:14px}
+    .nav-footer a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Mochi Status</h1>
+      <span id="conn-dot" class="dot disconnected" title="SSE connection"></span>
+    </header>
+
+    <!-- System Overview Cards -->
+    <div class="overview">
+      <div class="card">
+        <div class="card-label">WiFi</div>
+        <div class="card-value"><span id="rssi-val">-- dBm</span><span id="signal-bars" class="signal-bars"><span></span><span></span><span></span><span></span><span></span></span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">MQTT</div>
+        <div class="card-value"><span id="mqtt-dot" class="dot disconnected"></span> <span id="mqtt-val">Disconnected</span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Devices</div>
+        <div class="card-value"><span id="dev-online">0</span>/<span id="dev-total">0</span> Online</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Heap</div>
+        <div class="card-value"><span id="heap-kb">--</span> KB</div>
+        <div class="bar-track"><div id="heap-bar" class="bar-fill green" style="width:0%"></div></div>
+        <div class="card-sub">Frag: <span id="heap-frag">--</span>%</div>
+      </div>
+    </div>
+
+    <!-- Device List -->
+    <div class="section">
+      <div class="section-title">Connected Devices</div>
+      <div id="dev-list">
+        <div class="empty">No devices discovered yet</div>
+      </div>
+    </div>
+
+    <!-- Diagnostics Panel -->
+    <div class="section card">
+      <div class="diag-toggle" onclick="toggleDiag()">
+        <span class="section-title" style="margin-bottom:0">Diagnostics</span>
+        <span id="diag-arrow" class="arrow">&#9660;</span>
+      </div>
+      <div id="diag-body" class="diag-body">
+        <div class="diag-row"><span class="diag-label">Heap Free</span><span id="diag-heap" class="diag-val">-- B</span></div>
+        <div class="diag-row"><span class="diag-label">Max Block</span><span id="diag-maxblk" class="diag-val">-- B</span></div>
+        <div class="diag-row"><span class="diag-label">Fragmentation</span><span id="diag-frag" class="diag-val">--%</span></div>
+        <div class="diag-row"><span class="diag-label">WiFi RSSI</span><span id="diag-rssi" class="diag-val">-- dBm</span></div>
+        <div class="diag-row"><span class="diag-label">MQTT State</span><span id="diag-mqtt" class="diag-val">--</span></div>
+        <div class="diag-row"><span class="diag-label">Uptime</span><span id="diag-uptime" class="diag-val">--</span></div>
+      </div>
+    </div>
+
+    <!-- Navigation Footer -->
+    <div class="nav-footer">
+      <a href="/">Home</a>
+      <a href="/monitor">Settings</a>
+    </div>
+  </div>
+
+  <script>
+    var evtSource=null,reconnectTimer=null;
+    var MQTT_STATES=['Disconnected','Reconnecting...','Connected'];
+    var MQTT_CLASSES=['mqtt-disconnected','mqtt-reconnecting','mqtt-connected'];
+    var MQTT_DOTS=['disconnected','reconnecting','connected'];
+
+    function connectSSE(){
+      if(evtSource)evtSource.close();
+      evtSource=new EventSource('/events');
+      evtSource.addEventListener('status',function(e){
+        var d=JSON.parse(e.data);
+        updateDashboard(d);
+      });
+      evtSource.onopen=function(){
+        document.getElementById('conn-dot').className='dot connected';
+        if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+      };
+      evtSource.onerror=function(){
+        document.getElementById('conn-dot').className='dot disconnected';
+        evtSource.close();
+        reconnectTimer=setTimeout(connectSSE,5000);
+      };
+    }
+
+    function updateDashboard(d){
+      // WiFi card
+      var rssi=d.rssi||0;
+      document.getElementById('rssi-val').textContent=rssi+' dBm';
+      updateSignalBars(rssi);
+
+      // MQTT card
+      var ms=d.mqtt||0;
+      document.getElementById('mqtt-val').textContent=MQTT_STATES[ms]||'Unknown';
+      document.getElementById('mqtt-val').className=MQTT_CLASSES[ms]||'';
+      document.getElementById('mqtt-dot').className='dot '+(MQTT_DOTS[ms]||'disconnected');
+
+      // Devices card
+      document.getElementById('dev-online').textContent=d.online||0;
+      document.getElementById('dev-total').textContent=d.devCnt||0;
+
+      // Heap card
+      var heapKB=d.heap?Math.round(d.heap/1024):0;
+      document.getElementById('heap-kb').textContent=heapKB;
+      var frag=d.frag||0;
+      document.getElementById('heap-frag').textContent=frag;
+      // Heap bar: show used proportion (assume 80KB total for ESP8266)
+      var heapPct=d.heap?Math.min(100,Math.round(d.heap/81920*100)):0;
+      var hbar=document.getElementById('heap-bar');
+      hbar.style.width=heapPct+'%';
+      hbar.className='bar-fill '+(heapPct>50?'green':heapPct>25?'yellow':'red');
+
+      // Device list
+      var dl=document.getElementById('dev-list');
+      if(!d.d||d.d.length===0){
+        dl.innerHTML='<div class="empty">No devices discovered yet</div>';
+      }else{
+        var sorted=[].concat(d.d).sort(function(a,b){return(b.on?1:0)-(a.on?1:0);});
+        dl.innerHTML=sorted.map(function(dev){
+          return '<div class="dev-row">'+
+            '<span class="dot '+(dev.on?'online':'offline')+'"></span>'+
+            '<span class="dev-host">'+escHtml(dev.h)+'</span>'+
+            '<span class="dev-metric">CPU '+dev.cpu+'%</span>'+
+            '<span class="dev-metric">RAM '+dev.ram+'%</span>'+
+            '</div>';
+        }).join('');
+      }
+
+      // Diagnostics
+      document.getElementById('diag-heap').textContent=fmtNum(d.heap)+' B';
+      document.getElementById('diag-maxblk').textContent=fmtNum(d.maxBlk)+' B';
+      var fragEl=document.getElementById('diag-frag');
+      fragEl.textContent=frag+'%';
+      fragEl.className='diag-val '+(frag<30?'color-green':frag<60?'color-yellow':'color-red');
+      document.getElementById('diag-rssi').textContent=rssi+' dBm';
+      document.getElementById('diag-mqtt').textContent=MQTT_STATES[ms]||'Unknown';
+      document.getElementById('diag-mqtt').className='diag-val '+(MQTT_CLASSES[ms]||'');
+      document.getElementById('diag-uptime').textContent=fmtUptime(d.up||0);
+    }
+
+    function updateSignalBars(rssi){
+      var bars=document.getElementById('signal-bars').children;
+      var strength=rssi>-50?5:rssi>-60?4:rssi>-70?3:rssi>-80?2:1;
+      var cls=rssi>-50?'active':rssi>-70?'warn':'poor';
+      for(var i=0;i<5;i++){
+        bars[i].className=i<strength?cls:'';
+      }
+    }
+
+    function fmtUptime(sec){
+      var d=Math.floor(sec/86400);
+      var h=Math.floor((sec%86400)/3600);
+      var m=Math.floor((sec%3600)/60);
+      var s=sec%60;
+      var r='';
+      if(d>0)r+=d+'d ';
+      if(h>0||d>0)r+=h+'h ';
+      r+=m+'m '+s+'s';
+      return r;
+    }
+
+    function fmtNum(n){
+      if(n==null)return'--';
+      return n.toLocaleString();
+    }
+
+    function escHtml(s){
+      var el=document.createElement('span');
+      el.textContent=s||'';
+      return el.innerHTML;
+    }
+
+    function toggleDiag(){
+      var body=document.getElementById('diag-body');
+      var arrow=document.getElementById('diag-arrow');
+      body.classList.toggle('collapsed');
+      arrow.classList.toggle('collapsed');
+    }
+
+    connectSSE();
+  </script>
+</body>
+</html>
