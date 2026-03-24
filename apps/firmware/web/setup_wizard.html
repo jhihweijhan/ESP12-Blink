@@ -1,12 +1,588 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mochi Metrics Setup</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mochi Setup</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;padding:16px}
+    .container{max-width:480px;margin:0 auto}
+    h1{text-align:center;color:#00d9ff;font-size:22px;margin-bottom:20px}
+    h2{font-size:18px;color:#fff;margin-bottom:4px}
+    .subtitle{font-size:13px;color:#888;margin-bottom:16px}
+
+    /* Progress bar */
+    .progress{display:flex;justify-content:space-between;margin-bottom:24px;position:relative}
+    .progress::before{content:'';position:absolute;top:16px;left:10%;right:10%;height:2px;background:#333}
+    .prog-step{display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;flex:1}
+    .prog-circle{width:32px;height:32px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#888;transition:all .3s}
+    .prog-circle.active{background:#00d9ff;color:#fff}
+    .prog-circle.done{background:#00c853;color:#fff}
+    .prog-label{font-size:11px;color:#666;margin-top:6px;text-align:center}
+    .prog-label.active{color:#00d9ff}
+    .prog-label.done{color:#00c853}
+
+    /* Cards & steps */
+    .step{display:none}
+    .step.active{display:block}
+    .card{background:#16213e;border-radius:12px;padding:16px;margin-bottom:12px}
+    .form-group{margin-bottom:14px}
+    label{display:block;margin-bottom:4px;color:#aaa;font-size:13px}
+    input[type="text"],input[type="number"],input[type="password"]{width:100%;padding:10px 12px;font-size:15px;border:1px solid #334;border-radius:8px;background:#1a1a2e;color:#f0f0f0}
+    input:focus{outline:none;border-color:#00d9ff}
+    .row{display:flex;gap:10px}
+    .row>*{flex:1}
+
+    /* Buttons */
+    .btn{width:100%;padding:12px;font-size:16px;font-weight:600;border:none;border-radius:10px;cursor:pointer;color:#fff;transition:transform .1s}
+    .btn:active{transform:scale(.98)}
+    .btn-primary{background:linear-gradient(135deg,#00d9ff,#0095ff)}
+    .btn-primary:disabled{background:#444;cursor:not-allowed}
+    .btn-secondary{background:#334;margin-top:8px}
+    .btn-back{background:none;border:1px solid #444;color:#aaa;margin-top:8px}
+    .btn-group{display:flex;gap:8px;margin-top:12px}
+    .btn-group .btn{flex:1}
+
+    /* WiFi list */
+    .wifi-list{max-height:240px;overflow-y:auto;margin-bottom:12px}
+    .wifi-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .2s}
+    .wifi-item:hover,.wifi-item.selected{background:#1a1a2e}
+    .wifi-ssid{font-size:14px;flex:1}
+    .wifi-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:#888}
+    .wifi-signal{font-size:14px}
+    .wifi-lock{font-size:12px}
+
+    /* Status indicators */
+    .status-msg{text-align:center;padding:12px;border-radius:8px;margin:8px 0;font-size:14px}
+    .status-loading{background:#16213e;color:#00d9ff}
+    .status-success{background:#0a3d2a;color:#00ff88}
+    .status-error{background:#3d0a0a;color:#ff4444}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid #00d9ff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Checkmark */
+    .checkmark{width:64px;height:64px;margin:0 auto 16px;display:block}
+    .checkmark circle{fill:#00c853}
+    .checkmark path{fill:#fff}
+
+    /* Sender tabs */
+    .tabs{display:flex;gap:2px;background:#16213e;border-radius:10px;padding:4px;margin-bottom:12px}
+    .tab{flex:1;padding:8px;text-align:center;border-radius:8px;cursor:pointer;color:#666;font-size:13px;font-weight:500}
+    .tab.active{background:#00d9ff;color:#fff}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+    .cmd-block{position:relative;background:#0d1117;border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;word-break:break-all;color:#c9d1d9}
+    .btn-copy{position:absolute;top:8px;right:8px;padding:4px 10px;font-size:11px;border:1px solid #444;border-radius:6px;background:#16213e;color:#aaa;cursor:pointer}
+    .btn-copy:hover{border-color:#00d9ff;color:#00d9ff}
+
+    /* Summary */
+    .summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #222}
+    .summary-label{color:#888}
+    .summary-value{color:#fff;font-weight:500}
+
+    /* Manual SSID */
+    .manual-toggle{font-size:12px;color:#00d9ff;cursor:pointer;text-decoration:underline;margin-top:8px;display:inline-block}
+
+    /* Auth toggle */
+    .auth-toggle{font-size:13px;color:#00d9ff;cursor:pointer;margin-bottom:12px;display:inline-block}
+    .auth-fields{display:none}
+    .auth-fields.show{display:block}
+
+    /* Countdown */
+    .countdown{font-size:48px;font-weight:700;color:#00d9ff;text-align:center;margin:16px 0}
+    .restart-msg{text-align:center;color:#888;font-size:14px;line-height:1.6}
+  </style>
 </head>
 <body>
-<h1>Setup Wizard</h1>
-<p>Placeholder - replaced by Plan 02</p>
+  <div class="container">
+    <h1>Mochi Metrics Setup</h1>
+
+    <!-- Progress bar -->
+    <div class="progress" id="progressBar">
+      <div class="prog-step"><div class="prog-circle active" id="pc-0">1</div><div class="prog-label active" id="pl-0">WiFi</div></div>
+      <div class="prog-step"><div class="prog-circle" id="pc-1">2</div><div class="prog-label" id="pl-1">MQTT</div></div>
+      <div class="prog-step"><div class="prog-circle" id="pc-2">3</div><div class="prog-label" id="pl-2">Sender</div></div>
+      <div class="prog-step"><div class="prog-circle" id="pc-3">4</div><div class="prog-label" id="pl-3">Done</div></div>
+    </div>
+
+    <!-- Step 1: WiFi -->
+    <div id="step-wifi" class="step active">
+      <div class="card">
+        <h2>Wi-Fi</h2>
+        <p class="subtitle">Connect to your network</p>
+
+        <div id="wifi-scan-area">
+          <button class="btn btn-secondary" onclick="scanWifi()" id="btnScan">Scan Networks</button>
+          <div id="wifiList" class="wifi-list" style="margin-top:12px"></div>
+          <span class="manual-toggle" onclick="toggleManualSsid()">Enter SSID manually</span>
+        </div>
+
+        <div id="wifi-manual" style="display:none;margin-top:12px">
+          <div class="form-group">
+            <label>SSID</label>
+            <input type="text" id="manualSsid" placeholder="Network name" autocomplete="off">
+          </div>
+          <span class="manual-toggle" onclick="toggleManualSsid()">Show scan list</span>
+        </div>
+
+        <div id="wifi-password" style="display:none;margin-top:12px">
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="wifiPass" placeholder="WiFi password" autocomplete="off">
+          </div>
+        </div>
+
+        <div id="wifiStatus"></div>
+
+        <div class="btn-group" style="margin-top:12px">
+          <button class="btn btn-primary" id="btnConnect" onclick="connectWifi()" disabled>Connect</button>
+        </div>
+        <button class="btn btn-primary" id="btnWifiNext" onclick="showStep(1)" style="display:none;margin-top:8px">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 2: MQTT -->
+    <div id="step-mqtt" class="step">
+      <div class="card">
+        <h2>MQTT</h2>
+        <p class="subtitle">Configure your MQTT broker</p>
+
+        <div class="form-group">
+          <label>Server</label>
+          <input type="text" id="mqttServer" placeholder="192.168.1.100">
+          <div style="font-size:11px;color:#666;margin-top:4px">Use IP address. Hostname may not resolve in AP mode.</div>
+        </div>
+        <div class="form-group">
+          <label>Port</label>
+          <input type="number" id="mqttPort" value="1883">
+        </div>
+
+        <span class="auth-toggle" onclick="toggleAuth()">Show authentication</span>
+        <div id="authFields" class="auth-fields">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="mqttUser" placeholder="optional" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="mqttPass" placeholder="optional" autocomplete="off">
+          </div>
+        </div>
+
+        <div id="mqttStatus"></div>
+
+        <button class="btn btn-secondary" onclick="testMqtt()" id="btnTestMqtt">Test Connection</button>
+        <button class="btn btn-primary" id="btnMqttSave" onclick="saveMqtt()" style="display:none;margin-top:8px">Save & Next</button>
+        <button class="btn btn-back" onclick="showStep(0)">Back</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Sender -->
+    <div id="step-sender" class="step">
+      <div class="card">
+        <h2>Sender</h2>
+        <p class="subtitle">Install metrics sender on your computer</p>
+        <p style="font-size:13px;color:#999;margin-bottom:16px">Run a sender on each computer you want to monitor.</p>
+
+        <div class="tabs" id="senderTabs">
+          <div class="tab" data-tab="linux" onclick="showSenderTab('linux')">Linux</div>
+          <div class="tab" data-tab="macos" onclick="showSenderTab('macos')">macOS</div>
+          <div class="tab" data-tab="windows" onclick="showSenderTab('windows')">Windows</div>
+        </div>
+
+        <div id="panel-linux" class="tab-panel">
+          <div class="cmd-block" id="cmd-linux"></div>
+          <button class="btn-copy" onclick="copyCmd('linux')">Copy</button>
+        </div>
+        <div id="panel-macos" class="tab-panel">
+          <div class="cmd-block" id="cmd-macos"></div>
+          <button class="btn-copy" onclick="copyCmd('macos')">Copy</button>
+        </div>
+        <div id="panel-windows" class="tab-panel">
+          <div class="cmd-block" id="cmd-windows"></div>
+          <button class="btn-copy" onclick="copyCmd('windows')">Copy</button>
+        </div>
+
+        <button class="btn btn-primary" onclick="showStep(3)" style="margin-top:16px">Next</button>
+        <button class="btn btn-back" onclick="showStep(1)">Back</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Done -->
+    <div id="step-done" class="step">
+      <div class="card" style="text-align:center">
+        <svg class="checkmark" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30"/><path d="M20 33l8 8 16-16" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h2 style="margin-bottom:12px">Setup Complete!</h2>
+
+        <div style="text-align:left;margin:16px 0">
+          <div class="summary-row"><span class="summary-label">WiFi</span><span class="summary-value" id="sumSsid">-</span></div>
+          <div class="summary-row"><span class="summary-label">MQTT</span><span class="summary-value" id="sumMqtt">-</span></div>
+        </div>
+
+        <div id="doneStatus"></div>
+        <button class="btn btn-primary" onclick="finishSetup()" id="btnFinish">Finish Setup</button>
+        <button class="btn btn-back" onclick="showStep(2)">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let currentStep = 0;
+    const steps = ['step-wifi','step-mqtt','step-sender','step-done'];
+    let wizardData = {ssid:'',mqttServer:'',mqttPort:1883,mqttUser:'',mqttPass:''};
+    let selectedSsid = '';
+    let selectedEncrypted = true;
+    let manualMode = false;
+    let pollTimer = null;
+
+    // Step navigation
+    function showStep(n) {
+      steps.forEach(function(id,i) {
+        document.getElementById(id).style.display = (i === n) ? 'block' : 'none';
+        document.getElementById(id).className = (i === n) ? 'step active' : 'step';
+      });
+      currentStep = n;
+      updateProgressBar(n);
+      if (n === 2) updateSenderCmds();
+      if (n === 3) updateSummary();
+    }
+
+    function updateProgressBar(n) {
+      for (var i = 0; i < 4; i++) {
+        var circle = document.getElementById('pc-' + i);
+        var label = document.getElementById('pl-' + i);
+        circle.className = 'prog-circle';
+        label.className = 'prog-label';
+        if (i < n) {
+          circle.className = 'prog-circle done';
+          circle.innerHTML = '&#10003;';
+          label.className = 'prog-label done';
+        } else if (i === n) {
+          circle.className = 'prog-circle active';
+          circle.textContent = String(i + 1);
+          label.className = 'prog-label active';
+        } else {
+          circle.textContent = String(i + 1);
+        }
+      }
+    }
+
+    // Step 1: WiFi
+    function scanWifi() {
+      var btn = document.getElementById('btnScan');
+      btn.disabled = true;
+      btn.textContent = 'Scanning...';
+      document.getElementById('wifiList').innerHTML = '';
+
+      fetch('/scan')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          btn.disabled = false;
+          btn.textContent = 'Scan Networks';
+          if (data.scanning) {
+            setTimeout(scanWifi, 1500);
+            return;
+          }
+          if (!Array.isArray(data) || data.length === 0) {
+            document.getElementById('wifiList').innerHTML = '<div style="text-align:center;color:#666;padding:12px">No networks found</div>';
+            return;
+          }
+          var html = '';
+          data.forEach(function(n) {
+            var signal = signalBars(n.rssi);
+            var lock = n.encryption > 0 ? '&#128274;' : '';
+            html += '<div class="wifi-item" onclick="selectWifi(\'' + escHtml(n.ssid) + '\',' + (n.encryption > 0 ? 'true' : 'false') + ')" data-ssid="' + escHtml(n.ssid) + '">';
+            html += '<span class="wifi-ssid">' + escHtml(n.ssid) + '</span>';
+            html += '<span class="wifi-meta"><span class="wifi-signal">' + signal + '</span><span class="wifi-lock">' + lock + '</span></span>';
+            html += '</div>';
+          });
+          document.getElementById('wifiList').innerHTML = html;
+        })
+        .catch(function() {
+          btn.disabled = false;
+          btn.textContent = 'Scan Networks';
+          document.getElementById('wifiList').innerHTML = '<div style="text-align:center;color:#ff4444;padding:12px">Scan failed. Try again.</div>';
+        });
+    }
+
+    function signalBars(rssi) {
+      if (rssi > -50) return '&#9608;&#9608;&#9608;&#9608;';
+      if (rssi > -60) return '&#9608;&#9608;&#9608;&#9601;';
+      if (rssi > -70) return '&#9608;&#9608;&#9601;&#9601;';
+      return '&#9608;&#9601;&#9601;&#9601;';
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function selectWifi(ssid, encrypted) {
+      selectedSsid = ssid;
+      selectedEncrypted = encrypted;
+      // highlight
+      document.querySelectorAll('.wifi-item').forEach(function(el) {
+        el.classList.toggle('selected', el.getAttribute('data-ssid') === ssid);
+      });
+      // show password if encrypted
+      document.getElementById('wifi-password').style.display = encrypted ? 'block' : 'none';
+      document.getElementById('btnConnect').disabled = false;
+    }
+
+    function toggleManualSsid() {
+      manualMode = !manualMode;
+      document.getElementById('wifi-scan-area').style.display = manualMode ? 'none' : 'block';
+      document.getElementById('wifi-manual').style.display = manualMode ? 'block' : 'none';
+      if (manualMode) {
+        document.getElementById('wifi-password').style.display = 'block';
+        document.getElementById('btnConnect').disabled = false;
+      } else {
+        document.getElementById('btnConnect').disabled = !selectedSsid;
+      }
+    }
+
+    function connectWifi() {
+      var ssid = manualMode ? document.getElementById('manualSsid').value.trim() : selectedSsid;
+      var pass = document.getElementById('wifiPass').value;
+      if (!ssid) { alert('Please select or enter a network'); return; }
+
+      wizardData.ssid = ssid;
+      var btn = document.getElementById('btnConnect');
+      btn.disabled = true;
+      showWifiStatus('loading', '<span class="spinner"></span>Connecting to ' + escHtml(ssid) + '...');
+
+      fetch('/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'ssid=' + encodeURIComponent(ssid) + '&pass=' + encodeURIComponent(pass)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          pollWifiState();
+        } else {
+          showWifiStatus('error', 'Connection failed: ' + (data.message || 'unknown'));
+          btn.disabled = false;
+        }
+      })
+      .catch(function() {
+        showWifiStatus('error', 'Network error. Try again.');
+        btn.disabled = false;
+      });
+    }
+
+    function pollWifiState() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(function() {
+        fetch('/api/v2/status')
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            var state = d.wifiApplyState;
+            if (state === 'success') {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              showWifiStatus('success', '&#10003; Connected to ' + escHtml(wizardData.ssid));
+              document.getElementById('btnConnect').style.display = 'none';
+              document.getElementById('btnWifiNext').style.display = 'block';
+            } else if (state === 'failed') {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              showWifiStatus('error', 'Connection failed. Check password and try again.');
+              document.getElementById('btnConnect').disabled = false;
+            } else {
+              showWifiStatus('loading', '<span class="spinner"></span>Connecting...');
+            }
+          })
+          .catch(function() {});
+      }, 1000);
+    }
+
+    function showWifiStatus(type, html) {
+      var el = document.getElementById('wifiStatus');
+      el.className = 'status-msg status-' + type;
+      el.innerHTML = html;
+    }
+
+    // Step 2: MQTT
+    function toggleAuth() {
+      var el = document.getElementById('authFields');
+      el.classList.toggle('show');
+    }
+
+    function testMqtt() {
+      var server = document.getElementById('mqttServer').value.trim();
+      var port = parseInt(document.getElementById('mqttPort').value, 10) || 1883;
+      if (!server) { alert('Please enter MQTT server address'); return; }
+
+      var btn = document.getElementById('btnTestMqtt');
+      btn.disabled = true;
+      showMqttStatus('loading', '<span class="spinner"></span>Testing connection...');
+
+      fetch('/api/v2/mqtt-test', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({server: server, port: port})
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        pollMqttTest();
+      })
+      .catch(function() {
+        showMqttStatus('error', 'Failed to start test. Check device connection.');
+        btn.disabled = false;
+      });
+    }
+
+    function pollMqttTest() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(function() {
+        fetch('/api/v2/status')
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            var state = d.mqttTestState;
+            if (state === 'success') {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              showMqttStatus('success', '&#10003; MQTT connection successful');
+              document.getElementById('btnTestMqtt').disabled = false;
+              document.getElementById('btnMqttSave').style.display = 'block';
+            } else if (state === 'failed' || state === 'timeout') {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              showMqttStatus('error', 'Connection failed. Check server address and port.');
+              document.getElementById('btnTestMqtt').disabled = false;
+            } else {
+              showMqttStatus('loading', '<span class="spinner"></span>Testing...');
+            }
+          })
+          .catch(function() {});
+      }, 500);
+    }
+
+    function showMqttStatus(type, html) {
+      var el = document.getElementById('mqttStatus');
+      el.className = 'status-msg status-' + type;
+      el.innerHTML = html;
+    }
+
+    function saveMqtt() {
+      var server = document.getElementById('mqttServer').value.trim();
+      var port = parseInt(document.getElementById('mqttPort').value, 10) || 1883;
+      var user = document.getElementById('mqttUser').value.trim();
+      var pass = document.getElementById('mqttPass').value;
+
+      wizardData.mqttServer = server;
+      wizardData.mqttPort = port;
+      wizardData.mqttUser = user;
+      wizardData.mqttPass = pass;
+
+      showMqttStatus('loading', '<span class="spinner"></span>Saving...');
+
+      fetch('/api/v2/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          mqttServer: server,
+          mqttPort: port,
+          mqttUser: user,
+          mqttPass: pass
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.success) {
+          showMqttStatus('success', '&#10003; MQTT config saved');
+          setTimeout(function() { showStep(2); }, 500);
+        } else {
+          showMqttStatus('error', 'Save failed: ' + (d.message || 'unknown'));
+        }
+      })
+      .catch(function() {
+        showMqttStatus('error', 'Network error. Try again.');
+      });
+    }
+
+    // Step 3: Sender
+    function detectPlatform() {
+      var ua = navigator.userAgent.toLowerCase();
+      if (ua.indexOf('win') !== -1) return 'windows';
+      if (ua.indexOf('mac') !== -1) return 'macos';
+      return 'linux';
+    }
+
+    function showSenderTab(tab) {
+      document.querySelectorAll('#senderTabs .tab').forEach(function(t) {
+        t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+      });
+      ['linux','macos','windows'].forEach(function(p) {
+        var panel = document.getElementById('panel-' + p);
+        panel.className = (p === tab) ? 'tab-panel active' : 'tab-panel';
+      });
+    }
+
+    function updateSenderCmds() {
+      var ip = wizardData.mqttServer || '192.168.1.100';
+      var port = wizardData.mqttPort || 1883;
+
+      var linuxCmd = 'MQTT_HOST=' + ip + ' MQTT_PORT=' + port + ' \\\n  pip install mochi-metrics-sender && \\\n  mochi-sender';
+      var macCmd = linuxCmd;
+      var winCmd = '$env:MQTT_HOST="' + ip + '"\n$env:MQTT_PORT="' + port + '"\npip install mochi-metrics-sender\nmochi-sender';
+
+      document.getElementById('cmd-linux').textContent = linuxCmd;
+      document.getElementById('cmd-macos').textContent = macCmd;
+      document.getElementById('cmd-windows').textContent = winCmd;
+
+      showSenderTab(detectPlatform());
+    }
+
+    function copyCmd(platform) {
+      var text = document.getElementById('cmd-' + platform).textContent;
+      navigator.clipboard.writeText(text).then(function() {
+        var panel = document.getElementById('panel-' + platform);
+        var btn = panel.querySelector('.btn-copy');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+      }).catch(function() {});
+    }
+
+    // Step 4: Done
+    function updateSummary() {
+      document.getElementById('sumSsid').textContent = wizardData.ssid || '-';
+      document.getElementById('sumMqtt').textContent = (wizardData.mqttServer || '-') + ':' + (wizardData.mqttPort || 1883);
+    }
+
+    function finishSetup() {
+      var btn = document.getElementById('btnFinish');
+      btn.disabled = true;
+      var statusEl = document.getElementById('doneStatus');
+
+      fetch('/api/v2/setup-complete', {method: 'POST'})
+        .then(function(r) { return r.json(); })
+        .then(function() {
+          var count = 3;
+          statusEl.className = 'status-msg status-loading';
+          statusEl.innerHTML = '<div class="countdown">' + count + '</div>';
+          var cd = setInterval(function() {
+            count--;
+            if (count > 0) {
+              statusEl.innerHTML = '<div class="countdown">' + count + '</div>';
+            } else {
+              clearInterval(cd);
+              statusEl.className = '';
+              statusEl.innerHTML = '<div class="restart-msg">Device is restarting.<br>Connect to your WiFi network and visit<br>the monitor page to view metrics.</div>';
+            }
+          }, 1000);
+        })
+        .catch(function() {
+          statusEl.className = 'status-msg status-error';
+          statusEl.textContent = 'Failed to complete setup. Try again.';
+          btn.disabled = false;
+        });
+    }
+
+    // Init
+    scanWifi();
+  </script>
 </body>
 </html>
