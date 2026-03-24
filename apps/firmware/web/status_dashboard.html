@@ -146,6 +146,7 @@
       evtSource=new EventSource('/events');
       evtSource.addEventListener('status',function(e){
         var d=JSON.parse(e.data);
+        document.getElementById('conn-dot').className='dot connected';
         updateDashboard(d);
       });
       evtSource.onopen=function(){
@@ -154,8 +155,9 @@
       };
       evtSource.onerror=function(){
         document.getElementById('conn-dot').className='dot disconnected';
-        evtSource.close();
-        reconnectTimer=setTimeout(connectSSE,5000);
+        if(evtSource.readyState===2){
+          reconnectTimer=setTimeout(connectSSE,5000);
+        }
       };
     }
 

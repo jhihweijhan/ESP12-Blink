@@ -7,9 +7,17 @@ from pathlib import Path
 
 
 def minify_html(html: str) -> str:
-    """Remove HTML comments, compress whitespace."""
+    """Remove HTML comments and JS single-line comments, compress whitespace."""
     # Remove HTML comments
     html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
+    # Remove JS single-line comments (// ...) inside <script> blocks
+    # Must happen BEFORE collapsing newlines, otherwise // eats the rest of the line
+    def strip_js_comments(match: re.Match) -> str:
+        script = match.group(1)
+        # Remove // comments but preserve URLs like http:// and strings
+        script = re.sub(r'(?<![:\'"\\])//[^\n]*', '', script)
+        return '<script>' + script + '</script>'
+    html = re.sub(r'<script>(.*?)</script>', strip_js_comments, html, flags=re.DOTALL)
     # Compress runs of whitespace to single space
     html = re.sub(r'\s+', ' ', html)
     # Remove spaces around tags
