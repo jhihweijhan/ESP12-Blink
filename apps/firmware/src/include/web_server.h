@@ -3,11 +3,13 @@
 
 #include <Arduino.h>
 #include <AsyncJson.h>
+#include <ESP8266WiFi.h>
 #include <ESPAsyncWebServer.h>
 
 #include "connection_policy.h"
 #include "device_store.h"
 #include "html_monitor_gz.h"
+#include "html_setup_wizard_gz.h"
 #include "html_wifi_setup_gz.h"
 #include "monitor_config.h"
 #include "mqtt_transport.h"
@@ -31,6 +33,7 @@ public:
 
     void loop() {
         processPendingWifiApply();
+        processPendingMqttTest();
 
         if (_pendingRestart && millis() >= _restartAt) {
             Serial.println("Restarting...");
@@ -51,7 +54,12 @@ public:
 
         _server.on("/", HTTP_GET, [this](AsyncWebServerRequest* request) {
             if (_wifiMgr.isAPMode) {
-                sendGzipPage(request, HTML_WIFI_SETUP_GZ, HTML_WIFI_SETUP_GZ_LEN);
+                if (_monitorConfig && _monitorConfig->config.setupComplete) {
+                    sendGzipPage(request, HTML_WIFI_SETUP_GZ, HTML_WIFI_SETUP_GZ_LEN);
+                } else {
+                    _wizardMode = true;
+                    sendGzipPage(request, HTML_SETUP_WIZARD_GZ, HTML_SETUP_WIZARD_GZ_LEN);
+                }
             } else {
                 request->redirect("/monitor");
             }
@@ -101,11 +109,54 @@ public:
             });
         _server.addHandler(configHandlerLegacy);
 
+        _server.on("/setup", HTTP_GET, [this](AsyncWebServerRequest* request) {
+            if (!_wifiMgr.isAPMode) {
+                request->send(403, "application/json", "{\"success\":false,\"message\":\"available in AP mode only\"}");
+                return;
+            }
+            _wizardMode = true;
+            sendGzipPage(request, HTML_SETUP_WIZARD_GZ, HTML_SETUP_WIZARD_GZ_LEN);
+        });
+
         _server.on("/api/v2/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
             sendStatus(request);
         });
         _server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
             sendStatus(request);
+        });
+
+        AsyncCallbackJsonWebHandler* mqttTestHandler =
+            new AsyncCallbackJsonWebHandler("/api/v2/mqtt-test", [this](AsyncWebServerRequest* request, JsonVariant& json) {
+                JsonObject data = json.as<JsonObject>();
+                const char* server = data["server"] | "";
+                uint16_t port = data["port"] | 1883;
+
+                if (strlen(server) == 0 || strlen(server) >= sizeof(_testMqttServer)) {
+                    request->send(400, "application/json", "{\"success\":false,\"message\":\"invalid server\"}");
+                    return;
+                }
+
+                strlcpy(_testMqttServer, server, sizeof(_testMqttServer));
+                _testMqttPort = port;
+                _mqttTestState = MQTT_TEST_PENDING;
+                _mqttTestStartMs = millis();
+                request->send(202, "application/json", "{\"status\":\"testing\"}");
+            });
+        _server.addHandler(mqttTestHandler);
+
+        _server.on("/api/v2/setup-complete", HTTP_POST, [this](AsyncWebServerRequest* request) {
+            if (!_monitorConfig) {
+                request->send(500, "application/json", "{\"success\":false}");
+                return;
+            }
+            _monitorConfig->config.setupComplete = true;
+            if (_monitorConfig->save()) {
+                request->send(200, "application/json", "{\"success\":true,\"message\":\"restarting in 3s\"}");
+                _pendingRestart = true;
+                _restartAt = millis() + 3000;
+            } else {
+                request->send(500, "application/json", "{\"success\":false}");
+            }
         });
 
         _server.begin();
@@ -122,6 +173,15 @@ private:
         WIFI_APPLY_SUCCESS
     };
 
+    enum MqttTestState : uint8_t {
+        MQTT_TEST_IDLE = 0,
+        MQTT_TEST_PENDING,
+        MQTT_TEST_CONNECTING,
+        MQTT_TEST_SUCCESS,
+        MQTT_TEST_FAILED,
+        MQTT_TEST_TIMEOUT
+    };
+
     AsyncWebServer _server;
     WiFiManager& _wifiMgr;
     MonitorConfigManager* _monitorConfig = nullptr;
@@ -132,6 +192,15 @@ private:
     WifiApplyState _wifiApplyState = WIFI_APPLY_IDLE;
     unsigned long _wifiApplyNextAt = 0;
     uint8_t _wifiApplyAttempts = 0;
+
+    // 設定精靈狀態
+    bool _wizardMode = false;
+    MqttTestState _mqttTestState = MQTT_TEST_IDLE;
+    char _testMqttServer[64];
+    uint16_t _testMqttPort = 1883;
+    unsigned long _mqttTestStartMs = 0;
+    static const unsigned long MQTT_TEST_TIMEOUT_MS = 3000;
+    WiFiClient _testClient;
 
     static void sendGzipPage(AsyncWebServerRequest* request,
                              const uint8_t* data, size_t len) {
@@ -160,6 +229,17 @@ private:
                 return "success";
             default:
                 return "idle";
+        }
+    }
+
+    const char* mqttTestStateToString() const {
+        switch (_mqttTestState) {
+            case MQTT_TEST_PENDING:    return "pending";
+            case MQTT_TEST_CONNECTING: return "connecting";
+            case MQTT_TEST_SUCCESS:    return "success";
+            case MQTT_TEST_FAILED:     return "failed";
+            case MQTT_TEST_TIMEOUT:    return "timeout";
+            default:                   return "idle";
         }
     }
 
@@ -418,6 +498,7 @@ private:
         doc["deviceCount"] = _store ? _store->deviceCount : 0;
         doc["onlineCount"] = (_store && _monitorConfig) ? _store->getOnlineCount(_monitorConfig) : 0;
         doc["wifiApplyState"] = wifiApplyStateToString();
+        doc["mqttTestState"] = mqttTestStateToString();
         doc["wifiRSSI"] = WiFi.RSSI();
         doc["wifiChannel"] = WiFi.channel();
         doc["uptimeMs"] = millis();
@@ -484,9 +565,11 @@ private:
 
         if (result == WiFiManager::CONNECT_SUCCESS) {
             _wifiApplyState = WIFI_APPLY_SUCCESS;
-            _pendingRestart = true;
-            _restartAt = millis() + 3000;
-            Serial.println("WiFi apply success, scheduling restart...");
+            if (!_wizardMode) {
+                _pendingRestart = true;
+                _restartAt = millis() + 3000;
+            }
+            Serial.println(_wizardMode ? "WiFi apply success (wizard mode, no restart)" : "WiFi apply success, scheduling restart...");
             return;
         }
 
@@ -500,6 +583,28 @@ private:
         Serial.println("WiFi apply failed after retries");
         _wifiMgr.startAP();
         _wifiMgr.startScan();
+    }
+
+    void processPendingMqttTest() {
+        if (_mqttTestState == MQTT_TEST_IDLE || _mqttTestState == MQTT_TEST_SUCCESS ||
+            _mqttTestState == MQTT_TEST_FAILED || _mqttTestState == MQTT_TEST_TIMEOUT) {
+            return;
+        }
+
+        if (_mqttTestState == MQTT_TEST_PENDING) {
+            _testClient.stop();
+            _mqttTestState = MQTT_TEST_CONNECTING;
+            _testClient.setTimeout(MQTT_TEST_TIMEOUT_MS);
+            if (_testClient.connect(_testMqttServer, _testMqttPort)) {
+                _mqttTestState = MQTT_TEST_SUCCESS;
+                _testClient.stop();
+                Serial.printf("MQTT test: %s:%d reachable\n", _testMqttServer, _testMqttPort);
+            } else {
+                _mqttTestState = MQTT_TEST_FAILED;
+                Serial.printf("MQTT test: %s:%d unreachable\n", _testMqttServer, _testMqttPort);
+            }
+            return;
+        }
     }
 };
 

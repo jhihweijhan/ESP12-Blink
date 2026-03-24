@@ -82,6 +82,9 @@ struct MonitorConfig {
 
     // 離線判定設定
     uint16_t offlineTimeoutSec;   // 幾秒無更新視為離線
+
+    // 設定精靈狀態
+    bool setupComplete;           // 首次設定是否已完成
 };
 
 class MonitorConfigManager {
@@ -135,6 +138,9 @@ public:
 
         // 離線判定預設
         config.offlineTimeoutSec = DEFAULT_OFFLINE_TIMEOUT_SEC;
+
+        // 設定精靈預設
+        config.setupComplete = false;
     }
 
     bool load() {
@@ -209,6 +215,9 @@ public:
                                             (uint16_t)MIN_OFFLINE_TIMEOUT_SEC,
                                             (uint16_t)MAX_OFFLINE_TIMEOUT_SEC);
 
+        // 設定精靈
+        config.setupComplete = doc["setupComplete"] | false;
+
         Serial.println("Monitor config loaded");
         Serial.printf("  deviceCount: %d\n", config.deviceCount);
         for (uint8_t i = 0; i < config.deviceCount; i++) {
@@ -256,6 +265,9 @@ public:
         doc["displayTime"] = config.defaultDisplayTime;
         doc["autoCarousel"] = config.autoCarousel;
         doc["offlineTimeoutSec"] = config.offlineTimeoutSec;
+
+        // 設定精靈
+        doc["setupComplete"] = config.setupComplete;
 
         File file = LittleFS.open(MONITOR_CONFIG_FILE, "w");
         if (!file) {
