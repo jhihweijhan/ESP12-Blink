@@ -39,9 +39,8 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
         <form id="wifiForm">
             <div class="form-group">
                 <label>WiFi 名稱</label>
-                <select id="ssid" name="ssid" required>
-                    <option value="">掃描中...</option>
-                </select>
+                <input type="text" id="ssid" name="ssid" list="ssidList" placeholder="輸入或選擇 WiFi 網路" required autocomplete="off" autocapitalize="off">
+                <datalist id="ssidList"></datalist>
             </div>
             <div class="form-group">
                 <label for="pass">密碼</label>
@@ -54,7 +53,8 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
     </div>
     <script>
         function scanWiFi() {
-            document.getElementById('ssid').innerHTML = '<option value="">掃描中...</option>';
+            document.getElementById('ssid').placeholder = '掃描中...';
+            document.getElementById('ssidList').innerHTML = '';
             fetch('/scan')
                 .then(r => r.json())
                 .then(data => {
@@ -63,27 +63,26 @@ const char HTML_PAGE[] PROGMEM = R"rawliteral(
                         return;
                     }
                     if (!Array.isArray(data) || data.length === 0) {
-                        document.getElementById('ssid').innerHTML = '<option value="">未找到網路，點擊重新掃描</option>';
+                        document.getElementById('ssid').placeholder = '未找到網路，可手動輸入或重新掃描';
                         return;
                     }
-                    let opts = '<option value="">選擇 WiFi 網路</option>';
+                    let opts = '';
                     data.forEach(n => {
-                        const icon = n.secure ? '🔒' : '📶';
-                        const signal = n.rssi > -50 ? '▓▓▓' : n.rssi > -70 ? '▓▓░' : '▓░░';
-                        opts += `<option value="${n.ssid}">${icon} ${n.ssid} ${signal}</option>`;
+                        opts += `<option value="${n.ssid}">`;
                     });
-                    document.getElementById('ssid').innerHTML = opts;
+                    document.getElementById('ssidList').innerHTML = opts;
+                    document.getElementById('ssid').placeholder = '輸入或選擇 WiFi 網路';
                 })
                 .catch(() => {
-                    document.getElementById('ssid').innerHTML = '<option value="">掃描失敗，點擊重新掃描</option>';
+                    document.getElementById('ssid').placeholder = '掃描失敗，可手動輸入或重新掃描';
                 });
         }
 
         document.getElementById('wifiForm').onsubmit = function(e) {
             e.preventDefault();
-            const ssid = document.getElementById('ssid').value;
+            const ssid = document.getElementById('ssid').value.trim();
             const pass = document.getElementById('pass').value;
-            if (!ssid) { alert('請選擇 WiFi 網路'); return; }
+            if (!ssid) { alert('請輸入或選擇 WiFi 網路'); return; }
 
             const status = document.getElementById('status');
             const btn = document.getElementById('submitBtn');
