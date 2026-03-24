@@ -3,29 +3,52 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+#include <espMqttClientAsync.h>
 
 #include "connection_policy.h"
 #include "device_store.h"
 #include "metrics_parser_v2.h"
 #include "monitor_config.h"
 
-class MQTTTransport;
-static MQTTTransport* _mqttTransportInstance = nullptr;
-
 class MQTTTransport {
 public:
     typedef void (*MetricsCallback)(const char* hostname);
 
-    MQTTTransport() : _client(_wifiClient) {
-        _mqttTransportInstance = this;
-    }
+    MQTTTransport() {}
 
     MetricsCallback onMetricsReceived = nullptr;
 
     void begin(MonitorConfigManager& configMgr, DeviceStore& store) {
         _configMgr = &configMgr;
         _store = &store;
+
+        _client.onConnect([this](bool sessionPresent) {
+            _state = MqttConnectionState::CONNECTED;
+            _reconnectFailureCount = 0;
+            _lastConnectedAt = millis();
+            Serial.println("MQTT connected");
+            subscribeConfiguredTopics();
+        });
+
+        _client.onDisconnect([this](espMqttClientTypes::DisconnectReason reason) {
+            Serial.printf("MQTT disconnected: %u\n", static_cast<uint8_t>(reason));
+            if (_state == MqttConnectionState::CONNECTED) {
+                _lastDisconnectedAt = millis();
+            }
+            _state = MqttConnectionState::DISCONNECTED;
+            scheduleReconnect();
+        });
+
+        _client.onMessage([this](
+            const espMqttClientTypes::MessageProperties& properties,
+            const char* topic,
+            const uint8_t* payload,
+            size_t len, size_t index, size_t total) {
+            if (index == 0 && len == total) {
+                handleMessage(const_cast<char*>(topic),
+                              const_cast<uint8_t*>(payload), static_cast<unsigned int>(len));
+            }
+        });
     }
 
     void connect() {
@@ -35,12 +58,20 @@ public:
         }
 
         _client.setServer(_configMgr->config.mqttServer, _configMgr->config.mqttPort);
-        _client.setCallback(mqttCallback);
-        _client.setBufferSize(MQTT_MAX_PAYLOAD_BYTES);
 
-        _reconnectFailureCount = 0;
-        _nextReconnectAt = 0;
-        reconnect();
+        String clientId = "ESP12-v2-" + String(random(0xffff), HEX);
+        _client.setClientId(clientId.c_str());
+
+        if (strlen(_configMgr->config.mqttUser) > 0) {
+            _client.setCredentials(_configMgr->config.mqttUser,
+                                   _configMgr->config.mqttPass);
+        }
+
+        _state = MqttConnectionState::RECONNECTING;
+        _client.connect();
+        Serial.printf("Connecting MQTT: %s:%d\n",
+                       _configMgr->config.mqttServer,
+                       _configMgr->config.mqttPort);
     }
 
     void loop() {
@@ -50,28 +81,27 @@ public:
 
         unsigned long now = millis();
 
-        if (!_client.connected()) {
-            if (_nextReconnectAt == 0 || (long)(now - _nextReconnectAt) >= 0) {
-                reconnect();
+        if (_needsReconnect && _state == MqttConnectionState::DISCONNECTED) {
+            if ((long)(now - _nextReconnectAt) >= 0) {
+                _needsReconnect = false;
+                connect();
             }
-        } else {
-            _client.loop();
         }
 
-        unsigned long offlineCheckNow = millis();
-        if (offlineCheckNow - _lastOfflineCheckAt >= 1000UL) {
-            _lastOfflineCheckAt = offlineCheckNow;
-            _store->markOfflineExpired(offlineCheckNow, getOfflineTimeoutMs());
+        if (now - _lastOfflineCheckAt >= 1000UL) {
+            _lastOfflineCheckAt = now;
+            _store->markOfflineExpired(now, getOfflineTimeoutMs());
         }
     }
 
-    bool isConnected() {
-        return _client.connected();
-    }
+    MqttConnectionState getConnectionState() const { return _state; }
+    bool isConnected() const { return _state == MqttConnectionState::CONNECTED; }
 
-    bool isConnectedForDisplay() {
+    bool isConnectedForDisplay() const {
+        if (_state == MqttConnectionState::CONNECTED) return true;
+        if (_state == MqttConnectionState::RECONNECTING) return true;
         unsigned long now = millis();
-        return !shouldShowMqttDisconnectedStatus(_client.connected(), now, _lastConnectedAt, _lastMessageAt);
+        return !shouldShowMqttDisconnectedStatus(false, now, _lastConnectedAt, _lastMessageAt);
     }
 
     bool isTopicInAllowlist(const char* topic) const {
@@ -155,11 +185,13 @@ public:
     }
 
 private:
-    WiFiClient _wifiClient;
-    PubSubClient _client;
+    espMqttClientAsync _client;
+    MqttConnectionState _state = MqttConnectionState::DISCONNECTED;
+    bool _needsReconnect = false;
+    unsigned long _nextReconnectAt = 0;
+    unsigned long _lastDisconnectedAt = 0;
     MonitorConfigManager* _configMgr = nullptr;
     DeviceStore* _store = nullptr;
-    unsigned long _nextReconnectAt = 0;
     uint8_t _reconnectFailureCount = 0;
     unsigned long _lastRxLogAt = 0;
     uint16_t _rxMessageCount = 0;
@@ -182,10 +214,13 @@ private:
         return (unsigned long)sec * 1000UL;
     }
 
-    static void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
-        if (_mqttTransportInstance) {
-            _mqttTransportInstance->handleMessage(topic, payload, length);
-        }
+    void scheduleReconnect() {
+        if (_reconnectFailureCount < 250) _reconnectFailureCount++;
+        uint32_t delayMs = computeMqttReconnectDelayMs(_reconnectFailureCount);
+        uint32_t jitter = random(0, 500);
+        _nextReconnectAt = millis() + delayMs + jitter;
+        _needsReconnect = true;
+        Serial.printf("MQTT retry in %lu ms\n", (unsigned long)(delayMs + jitter));
     }
 
     void subscribeConfiguredTopics() {
@@ -230,56 +265,15 @@ private:
                 discoveryTopic = MQTT_SENDER_DISCOVERY_TOPIC;
             }
 
-            if (_client.subscribe(discoveryTopic)) {
-                Serial.printf("Subscribed discovery topic: %s\n", discoveryTopic);
-            } else {
-                Serial.printf("Subscribe failed (discovery): %s\n", discoveryTopic);
-            }
+            _client.subscribe(discoveryTopic, 0);
+            Serial.printf("Subscribed discovery topic: %s\n", discoveryTopic);
             return;
         }
 
         for (uint8_t i = 0; i < uniqueCount; i++) {
-            if (_client.subscribe(uniqueTopics[i])) {
-                Serial.printf("Subscribed sender topic: %s\n", uniqueTopics[i]);
-            } else {
-                Serial.printf("Subscribe failed: %s\n", uniqueTopics[i]);
-            }
+            _client.subscribe(uniqueTopics[i], 0);
+            Serial.printf("Subscribed sender topic: %s\n", uniqueTopics[i]);
         }
-    }
-
-    void reconnect() {
-        if (!_configMgr) {
-            return;
-        }
-
-        Serial.printf("Connecting MQTT: %s:%d\n", _configMgr->config.mqttServer, _configMgr->config.mqttPort);
-
-        String clientId = "ESP12-v2-" + String(random(0xffff), HEX);
-        bool success = false;
-        if (strlen(_configMgr->config.mqttUser) > 0) {
-            success = _client.connect(clientId.c_str(), _configMgr->config.mqttUser, _configMgr->config.mqttPass);
-        } else {
-            success = _client.connect(clientId.c_str());
-        }
-
-        if (success) {
-            _reconnectFailureCount = 0;
-            _nextReconnectAt = 0;
-            _lastConnectedAt = millis();
-            Serial.println("MQTT connected");
-            subscribeConfiguredTopics();
-            return;
-        }
-
-        if (_reconnectFailureCount < 250) {
-            _reconnectFailureCount++;
-        }
-
-        uint32_t delayMs = computeMqttReconnectDelayMs(_reconnectFailureCount);
-        uint32_t jitter = random(0, 500);
-        _nextReconnectAt = millis() + delayMs + jitter;
-
-        Serial.printf("MQTT failed, rc=%d, retry in %lu ms\n", _client.state(), (unsigned long)(delayMs + jitter));
     }
 };
 
