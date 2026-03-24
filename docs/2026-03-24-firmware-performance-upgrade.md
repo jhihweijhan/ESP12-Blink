@@ -45,11 +45,11 @@ ESP12 韌體有兩個已知效能瓶頸：
 - **根因**：`onMessage` 回調只處理 `index == 0 && len == total` 的完整訊息，TCP 分片的訊息被靜默丟棄
 - **修復**：新增 1KB 接收緩衝區 `_msgBuf`，將分片訊息重組後再交給 `handleMessage()`
 
-### 3) Keep-alive 過短導致斷線
+### 3) PINGREQ 未發送導致 broker 主動斷線
 
-- **現象**：每隔幾分鐘 MQTT 斷線
-- **根因**：espMqttClient 預設 keep-alive 15 秒，TFT SPI 渲染期間 ESP8266 無法及時處理 PING/PONG
-- **修復**：`setKeepAlive(120)` 增加到 120 秒
+- **現象**：每隔約 90 秒 MQTT 斷線（1.5× keepalive）
+- **根因**：espMqttClientAsync 在 ESP8266 上無法可靠發送 PINGREQ，Mosquitto 因超時主動斷開連線
+- **修復**：`setKeepAlive(0)` 禁用 MQTT keepalive，改用自定義 30 秒沈默偵測（`MQTT_CONNECTED_SILENCE_TIMEOUT_MS`）偵測殭屍連線
 
 ### 4) SPI 渲染阻塞 TCP 堆疊
 
@@ -67,6 +67,24 @@ ESP12 韌體有兩個已知效能瓶頸：
 - **根因**：MQTT 狀態從 x=8 開始繪製，x=0~7 的殘留像素未被清除
 - **修復**：起始 x 改為 0，padding 增加到 78px 完全覆蓋
 
+### 6) IP 顯示殘留像素（1920.0.0.0249）
+
+- **現象**：IP 從 `192.168.5.249` 錯亂顯示為 `1920.0.0.0249`
+- **根因**：`drawStringCentered()` 不清除舊像素，IP 長度變化時新舊文字重疊
+- **修復**：先 `fillRect()` 清除區域再 `drawStringCentered()`，並以差異比較只在值變更時重繪避免閃爍
+
+### 7) espMqttClientAsync 重連後 connect() 返回 false
+
+- **現象**：MQTT 斷線後無法重連，一直卡在 DISCONNECTED
+- **根因**：`disconnect(true)` 只將 espMqttClient 內部狀態設為 `disconnectingTcp1`，需要多次 `_client.loop()` 呼叫才能到達 `disconnected`；此前 `connect()` 因 `_state != disconnected` 返回 false
+- **修復**：重連前檢查 `_client.disconnected()` 確認 client 已完全斷線，否則等下一次 loop 迭代
+
+### 8) 重連雙重計數導致退避膨脹
+
+- **現象**：MQTT 重連延遲越來越長
+- **根因**：RECONNECTING 超時和 `onDisconnect` 回調都呼叫 `scheduleReconnect()`，失敗次數被加倍計算
+- **修復**：`scheduleReconnect()` 加入 `_needsReconnect` 防護，已排程時不重複遞增
+
 ## 技術數據
 
 | 指標 | 修改前 | 修改後 |
@@ -74,7 +92,7 @@ ESP12 韌體有兩個已知效能瓶頸：
 | SPI 時脈 | 10 MHz | 40 MHz |
 | drawChar SPI 交易/字元 | 128 | 16 |
 | MQTT connect() 阻塞 | 10-30 秒 | 0（非同步） |
-| MQTT keep-alive | 15 秒（預設） | 120 秒 |
+| MQTT keep-alive | 15 秒（預設） | 0（禁用，改用 30s 沈默偵測） |
 | 顯示刷新間隔（active） | 200 ms | 500 ms |
 | RAM 使用率 | ~45% | ~48.4% |
 | Flash 使用率 | ~38% | ~39.6% |
