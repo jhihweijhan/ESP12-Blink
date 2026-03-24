@@ -7,8 +7,8 @@
 
 #include "connection_policy.h"
 #include "device_store.h"
-#include "html_monitor.h"
-#include "html_page.h"
+#include "html_monitor_gz.h"
+#include "html_wifi_setup_gz.h"
 #include "monitor_config.h"
 #include "mqtt_transport.h"
 #include "wifi_manager.h"
@@ -51,7 +51,7 @@ public:
 
         _server.on("/", HTTP_GET, [this](AsyncWebServerRequest* request) {
             if (_wifiMgr.isAPMode) {
-                request->send_P(200, "text/html", HTML_PAGE);
+                sendGzipPage(request, HTML_WIFI_SETUP_GZ, HTML_WIFI_SETUP_GZ_LEN);
             } else {
                 request->redirect("/monitor");
             }
@@ -62,11 +62,11 @@ public:
                 request->send(403, "application/json", "{\"success\":false,\"message\":\"available in AP mode only\"}");
                 return;
             }
-            request->send_P(200, "text/html", HTML_PAGE);
+            sendGzipPage(request, HTML_WIFI_SETUP_GZ, HTML_WIFI_SETUP_GZ_LEN);
         });
 
         _server.on("/monitor", HTTP_GET, [](AsyncWebServerRequest* request) {
-            request->send_P(200, "text/html", (const uint8_t*)HTML_MONITOR, HTML_MONITOR_LEN);
+            sendGzipPage(request, HTML_MONITOR_GZ, HTML_MONITOR_GZ_LEN);
         });
 
         _server.on("/scan", HTTP_GET, [this](AsyncWebServerRequest* request) {
@@ -132,6 +132,14 @@ private:
     WifiApplyState _wifiApplyState = WIFI_APPLY_IDLE;
     unsigned long _wifiApplyNextAt = 0;
     uint8_t _wifiApplyAttempts = 0;
+
+    static void sendGzipPage(AsyncWebServerRequest* request,
+                             const uint8_t* data, size_t len) {
+        AsyncWebServerResponse* response =
+            request->beginResponse_P(200, "text/html", data, len);
+        response->addHeader("Content-Encoding", "gzip");
+        request->send(response);
+    }
 
     bool isWifiApplyBusy() const {
         return _wifiApplyState == WIFI_APPLY_PENDING_START || _wifiApplyState == WIFI_APPLY_CONNECTING ||
