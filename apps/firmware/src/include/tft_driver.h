@@ -72,13 +72,26 @@ public:
         digitalWrite(TFT_DC, HIGH);
         digitalWrite(TFT_CS, LOW);
 
+        static const uint16_t FILL_BUF_PIXELS = 32;
+        uint8_t fillBuf[FILL_BUF_PIXELS * 2];
         uint8_t hi = color >> 8;
         uint8_t lo = color & 0xFF;
-        const uint32_t total = (uint32_t)TFT_WIDTH * TFT_HEIGHT;
-        for (uint32_t i = 0; i < total; i++) {
-            SPI.transfer(hi);
-            SPI.transfer(lo);
+        for (uint16_t i = 0; i < FILL_BUF_PIXELS; i++) {
+            fillBuf[i * 2] = hi;
+            fillBuf[i * 2 + 1] = lo;
         }
+
+        const uint32_t total = (uint32_t)TFT_WIDTH * TFT_HEIGHT;
+        uint32_t fullChunks = total / FILL_BUF_PIXELS;
+        uint16_t remainder = total % FILL_BUF_PIXELS;
+
+        for (uint32_t i = 0; i < fullChunks; i++) {
+            SPI.writeBytes(fillBuf, FILL_BUF_PIXELS * 2);
+        }
+        if (remainder > 0) {
+            SPI.writeBytes(fillBuf, remainder * 2);
+        }
+
         digitalWrite(TFT_CS, HIGH);
         yield();
     }
@@ -94,13 +107,27 @@ public:
         digitalWrite(TFT_DC, HIGH);
         digitalWrite(TFT_CS, LOW);
 
+        // Build a fill buffer: 64 bytes = 32 pixels of the same color
+        static const uint16_t FILL_BUF_PIXELS = 32;
+        uint8_t fillBuf[FILL_BUF_PIXELS * 2];  // 64 bytes, fits ESP8266 SPI FIFO
         uint8_t hi = color >> 8;
         uint8_t lo = color & 0xFF;
-        uint32_t total = (uint32_t)w * h;
-        for (uint32_t i = 0; i < total; i++) {
-            SPI.transfer(hi);
-            SPI.transfer(lo);
+        for (uint16_t i = 0; i < FILL_BUF_PIXELS; i++) {
+            fillBuf[i * 2] = hi;
+            fillBuf[i * 2 + 1] = lo;
         }
+
+        uint32_t total = (uint32_t)w * h;
+        uint32_t fullChunks = total / FILL_BUF_PIXELS;
+        uint16_t remainder = total % FILL_BUF_PIXELS;
+
+        for (uint32_t i = 0; i < fullChunks; i++) {
+            SPI.writeBytes(fillBuf, FILL_BUF_PIXELS * 2);
+        }
+        if (remainder > 0) {
+            SPI.writeBytes(fillBuf, remainder * 2);
+        }
+
         digitalWrite(TFT_CS, HIGH);
         if (total > 512) yield();  // 大面積填充後讓出 CPU
     }
