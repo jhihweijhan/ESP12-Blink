@@ -14,6 +14,18 @@
 
 ![執行畫面](docs/images/runtime-screen.jpeg)
 
+### WebUI 設定精靈
+
+| Step 1: WiFi 設定 | Step 2: MQTT 設定 | Step 3: Sender 安裝 | Step 4: 完成 |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/images/webui-wizard-wifi.png" width="200" alt="WiFi Setup"> | <img src="docs/images/webui-wizard-mqtt.png" width="200" alt="MQTT Setup"> | <img src="docs/images/webui-wizard-sender.png" width="200" alt="Sender Install"> | <img src="docs/images/webui-wizard-done.png" width="200" alt="Setup Done"> |
+
+### 狀態面板與設定頁
+
+| 即時狀態面板 | 監控設定頁 |
+|:---:|:---:|
+| <img src="docs/images/webui-dashboard.png" width="360" alt="Status Dashboard"> | <img src="docs/images/webui-monitor-config.png" width="360" alt="Monitor Config"> |
+
 ---
 
 ## 這個專案能教你什麼
@@ -102,6 +114,61 @@ cd apps/sender/python && pip install -e . && python sender_v2.py
 | Windows | `powershell apps/sender/go/install.ps1` (**以系統管理員執行**) | Scheduled Task |
 
 所有腳本支援 `--mqtt-host=IP`（Windows: `-MqttHost IP`）參數和 `--uninstall`（Windows: `-Uninstall`）卸載。
+
+<details>
+<summary><b>完整圖文安裝指南（點擊展開）</b></summary>
+
+### Step 1: 燒錄韌體
+
+準備：ESP12F 模組 + USB 線 + 安裝 PlatformIO
+
+```bash
+git clone https://github.com/mochi-metrics/Mochi-Metrics.git
+cd Mochi-Metrics/apps/firmware
+~/.platformio/penv/bin/pio run -t upload
+```
+
+燒錄成功後，ESP 螢幕會顯示初始化畫面，並自動進入 AP 模式。
+
+### Step 2: 連接 WiFi（設定精靈）
+
+1. 手機或電腦連接 ESP 的 AP 熱點（名稱顯示在螢幕上的 QR code 旁）
+2. 開啟瀏覽器前往 `http://192.168.4.1/setup`
+3. 精靈 Step 1：選擇你的 WiFi 網路，輸入密碼
+
+<img src="docs/images/webui-wizard-wifi.png" width="400" alt="WiFi Setup">
+
+### Step 3: 設定 MQTT Broker
+
+精靈 Step 2：輸入 MQTT broker 的 IP 和連接埠（預設 1883），可選填帳號密碼。
+點擊「Test Connection」驗證 broker 可達。
+
+<img src="docs/images/webui-wizard-mqtt.png" width="400" alt="MQTT Setup">
+
+### Step 4: 安裝 Sender
+
+精靈 Step 3：根據你的作業系統，複製對應的安裝指令到電腦上執行。
+安裝腳本會自動編譯 Go Sender、安裝為系統服務、開始發送指標。
+
+<img src="docs/images/webui-wizard-sender.png" width="400" alt="Sender Install">
+
+| 平台 | 安裝指令 |
+|------|---------|
+| Linux | `bash install.sh --mqtt-host=<broker-ip>` |
+| macOS | `bash install-macos.sh --mqtt-host=<broker-ip>` |
+| Windows | `powershell install.ps1 -MqttHost <broker-ip>` (系統管理員) |
+
+### Step 5: 完成驗證
+
+設定完成後自動跳轉監控頁面。確認以下項目：
+
+- 螢幕底部顯示 `MQTT OK`（綠色）
+- CPU / RAM / GPU 數據持續更新
+- 開啟 `http://<esp-ip>/status` 可看到即時狀態面板
+
+<img src="docs/images/webui-dashboard.png" width="400" alt="Dashboard">
+
+</details>
 
 ---
 
