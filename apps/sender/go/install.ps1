@@ -239,17 +239,28 @@ if (Test-Path `$envFile) {
         -RestartCount 3 `
         -RestartInterval (New-TimeSpan -Minutes 1)
 
-    Register-ScheduledTask `
-        -TaskName $TaskName `
-        -Action $action `
-        -Trigger $trigger `
-        -Settings $settings `
-        -Description "Mochi Metrics Sender (Go)" | Out-Null
+    try {
+        Register-ScheduledTask `
+            -TaskName $TaskName `
+            -Action $action `
+            -Trigger $trigger `
+            -Settings $settings `
+            -Description "Mochi Metrics Sender (Go)" `
+            -ErrorAction Stop | Out-Null
+    } catch {
+        throw "Failed to register scheduled task: $_"
+    }
 
     Write-Info "Scheduled task registered: $TaskName"
 
     # Start immediately
-    Start-ScheduledTask -TaskName $TaskName
+    try {
+        Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    } catch {
+        Write-Host "WARNING: Could not start task immediately: $_" -ForegroundColor Yellow
+        Write-Host "The task will start automatically at next logon." -ForegroundColor Yellow
+        return
+    }
     Write-Info "Task started."
 }
 
