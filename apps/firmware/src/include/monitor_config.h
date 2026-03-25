@@ -9,6 +9,9 @@
 #define MAX_DEVICES 8
 #define MAX_FIELDS 10
 #define MAX_SUBSCRIBED_TOPICS 8
+#define MAX_AVAILABLE_TOPICS 16
+#define AVAILABLE_TOPIC_EXPIRY_MS 300000UL  // 5 分鐘未收到訊息即視為過期
+#define AVAILABLE_TOPIC_BOOT_GRACE_MS 60000UL  // 重啟後給 60 秒寬限期
 #define DEFAULT_OFFLINE_TIMEOUT_SEC 20
 #define MIN_OFFLINE_TIMEOUT_SEC 5
 #define MAX_OFFLINE_TIMEOUT_SEC 300
@@ -64,6 +67,9 @@ struct MonitorConfig {
     char mqttTopic[64];
     char subscribedTopics[MAX_SUBSCRIBED_TOPICS][64];
     uint8_t subscribedTopicCount;
+    char availableTopics[MAX_AVAILABLE_TOPICS][64];
+    unsigned long availableTopicLastSeenMs[MAX_AVAILABLE_TOPICS];  // millis() 時間戳，0 = 從持久化載入尚未見過
+    uint8_t availableTopicCount;
 
     // 設備設定
     DeviceConfig devices[MAX_DEVICES];
@@ -117,6 +123,8 @@ public:
         config.mqttPass[0] = '\0';
         strlcpy(config.mqttTopic, MQTT_SENDER_DISCOVERY_TOPIC, sizeof(config.mqttTopic));
         config.subscribedTopicCount = 0;
+        config.availableTopicCount = 0;
+        memset(config.availableTopicLastSeenMs, 0, sizeof(config.availableTopicLastSeenMs));
 
         // 設備預設
         config.deviceCount = 0;
@@ -183,6 +191,21 @@ public:
             }
         }
 
+        config.availableTopicCount = 0;
+        memset(config.availableTopicLastSeenMs, 0, sizeof(config.availableTopicLastSeenMs));
+        JsonArray availTopicsArr = doc["mqtt"]["availableTopics"].as<JsonArray>();
+        if (!availTopicsArr.isNull()) {
+            for (JsonVariant topicVar : availTopicsArr) {
+                if (config.availableTopicCount >= MAX_AVAILABLE_TOPICS) break;
+                const char* topic = topicVar | "";
+                if (!topic || topic[0] == '\0') continue;
+                strlcpy(config.availableTopics[config.availableTopicCount], topic,
+                        sizeof(config.availableTopics[config.availableTopicCount]));
+                // lastSeenMs = 0 表示從持久化載入，等待 boot 寬限期後再判斷過期
+                config.availableTopicCount++;
+            }
+        }
+
         // 設備
         JsonArray devicesArr = doc["devices"].as<JsonArray>();
         config.deviceCount = 0;
@@ -241,6 +264,11 @@ public:
             subscribedTopics.add(config.subscribedTopics[i]);
         }
 
+        JsonArray availTopicsArr = doc["mqtt"]["availableTopics"].to<JsonArray>();
+        for (uint8_t i = 0; i < config.availableTopicCount; i++) {
+            availTopicsArr.add(config.availableTopics[i]);
+        }
+
         // 設備
         JsonArray devicesArr = doc["devices"].to<JsonArray>();
         for (uint8_t i = 0; i < config.deviceCount; i++) {
@@ -280,6 +308,75 @@ public:
 
         Serial.println("Monitor config saved");
         return true;
+    }
+
+    // 新增或更新已發現的 topic（去重），同時更新 lastSeenMs
+    bool addAvailableTopic(const char* topic) {
+        if (!topic || topic[0] == '\0') return false;
+        unsigned long now = millis();
+        for (uint8_t i = 0; i < config.availableTopicCount; i++) {
+            if (strcmp(config.availableTopics[i], topic) == 0) {
+                config.availableTopicLastSeenMs[i] = now;
+                return false;  // 已存在，僅更新時間戳
+            }
+        }
+        if (config.availableTopicCount >= MAX_AVAILABLE_TOPICS) return false;
+        strlcpy(config.availableTopics[config.availableTopicCount], topic,
+                sizeof(config.availableTopics[config.availableTopicCount]));
+        config.availableTopicLastSeenMs[config.availableTopicCount] = now;
+        config.availableTopicCount++;
+        _needsSave = true;
+        return true;
+    }
+
+    // 清除過期的 availableTopics（白名單中的 topics 受保護不被清除）
+    void purgeExpiredAvailableTopics(unsigned long nowMs) {
+        // 重啟後寬限期：等待 sender 有機會發送訊息
+        if (nowMs < AVAILABLE_TOPIC_BOOT_GRACE_MS) return;
+
+        bool changed = false;
+        uint8_t writeIdx = 0;
+
+        for (uint8_t i = 0; i < config.availableTopicCount; i++) {
+            bool keep = false;
+
+            // 白名單中的 topics 永遠保留
+            for (uint8_t j = 0; j < config.subscribedTopicCount; j++) {
+                if (strcmp(config.availableTopics[i], config.subscribedTopics[j]) == 0) {
+                    keep = true;
+                    break;
+                }
+            }
+
+            if (!keep) {
+                unsigned long lastSeen = config.availableTopicLastSeenMs[i];
+                if (lastSeen == 0) {
+                    // 從持久化載入但本次 boot 從未見過 → 已過寬限期仍未出現 → 過期
+                    keep = false;
+                } else if (hasElapsedIntervalMs(nowMs, lastSeen, AVAILABLE_TOPIC_EXPIRY_MS)) {
+                    keep = false;
+                } else {
+                    keep = true;
+                }
+            }
+
+            if (keep) {
+                if (writeIdx != i) {
+                    strlcpy(config.availableTopics[writeIdx], config.availableTopics[i],
+                            sizeof(config.availableTopics[writeIdx]));
+                    config.availableTopicLastSeenMs[writeIdx] = config.availableTopicLastSeenMs[i];
+                }
+                writeIdx++;
+            } else {
+                changed = true;
+                Serial.printf("Topic expired, removing: %s\n", config.availableTopics[i]);
+            }
+        }
+
+        if (changed) {
+            config.availableTopicCount = writeIdx;
+            _needsSave = true;
+        }
     }
 
     // 取得或建立設備設定（自動新增新設備）

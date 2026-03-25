@@ -339,42 +339,41 @@ private:
         }
 
         JsonArray availableTopics = doc["mqtt"]["availableTopics"].to<JsonArray>();
-        char knownHosts[MAX_DEVICES + MAX_DEVICES][32];
-        uint8_t knownHostCount = 0;
 
-        auto addKnownHost = [&](const char* hostname) {
-            if (!hostname || hostname[0] == '\0') {
-                return;
+        // 收集所有已知 topics（去重）：持久化的 availableTopics + runtime store（在線的）
+        // 注意：不再從 devices[] 反推 topics，避免已過期的 topic 被重新加入
+        char knownTopics[MAX_AVAILABLE_TOPICS][64];
+        uint8_t knownTopicCount = 0;
+
+        auto addKnownTopic = [&](const char* topic) {
+            if (!topic || topic[0] == '\0') return;
+            for (uint8_t i = 0; i < knownTopicCount; i++) {
+                if (strcmp(knownTopics[i], topic) == 0) return;
             }
-            for (uint8_t i = 0; i < knownHostCount; i++) {
-                if (strcmp(knownHosts[i], hostname) == 0) {
-                    return;
-                }
-            }
-            if (knownHostCount >= (MAX_DEVICES + MAX_DEVICES)) {
-                return;
-            }
-            strlcpy(knownHosts[knownHostCount], hostname, sizeof(knownHosts[knownHostCount]));
-            knownHostCount++;
+            if (knownTopicCount >= MAX_AVAILABLE_TOPICS) return;
+            strlcpy(knownTopics[knownTopicCount], topic, sizeof(knownTopics[knownTopicCount]));
+            knownTopicCount++;
         };
 
-        for (uint8_t i = 0; i < cfg.deviceCount; i++) {
-            addKnownHost(cfg.devices[i].hostname);
+        // 1. 持久化的 availableTopics（已經過過期清除，主要來源）
+        for (uint8_t i = 0; i < cfg.availableTopicCount; i++) {
+            addKnownTopic(cfg.availableTopics[i]);
         }
 
+        // 2. 從 runtime store 補充（當前在線的裝置，即時發現的）
         if (_store) {
             for (uint8_t i = 0; i < MAX_DEVICES; i++) {
                 DeviceSlot* slot = _store->getByIndex(i);
                 if (slot) {
-                    addKnownHost(slot->hostname);
+                    char topicBuf[96];
+                    snprintf(topicBuf, sizeof(topicBuf), "sys/agents/%s/metrics/v2", slot->hostname);
+                    addKnownTopic(topicBuf);
                 }
             }
         }
 
-        for (uint8_t i = 0; i < knownHostCount; i++) {
-            char topicBuf[96];
-            snprintf(topicBuf, sizeof(topicBuf), "sys/agents/%s/metrics/v2", knownHosts[i]);
-            availableTopics.add(topicBuf);
+        for (uint8_t i = 0; i < knownTopicCount; i++) {
+            availableTopics.add(knownTopics[i]);
         }
 
         JsonArray devices = doc["devices"].to<JsonArray>();
@@ -470,6 +469,52 @@ private:
                     strlcpy(cfg.subscribedTopics[cfg.subscribedTopicCount], topicValue,
                             sizeof(cfg.subscribedTopics[cfg.subscribedTopicCount]));
                     cfg.subscribedTopicCount++;
+                }
+            }
+
+            // 合併 availableTopics：WebUI 傳來的 + 現有持久化的
+            // 保留現有的 lastSeenMs，新 topic 設為當前時間
+            if (mqtt["availableTopics"].is<JsonArray>()) {
+                // 暫存舊的 lastSeenMs 對應表
+                char oldTopics[MAX_AVAILABLE_TOPICS][64];
+                unsigned long oldLastSeen[MAX_AVAILABLE_TOPICS];
+                uint8_t oldCount = cfg.availableTopicCount;
+                for (uint8_t i = 0; i < oldCount; i++) {
+                    strlcpy(oldTopics[i], cfg.availableTopics[i], sizeof(oldTopics[i]));
+                    oldLastSeen[i] = cfg.availableTopicLastSeenMs[i];
+                }
+
+                cfg.availableTopicCount = 0;
+                unsigned long now = millis();
+                JsonArray avail = mqtt["availableTopics"].as<JsonArray>();
+                for (JsonVariant topicVar : avail) {
+                    if (cfg.availableTopicCount >= MAX_AVAILABLE_TOPICS) break;
+                    const char* topicValue = topicVar | "";
+                    if (!topicValue || topicValue[0] == '\0') continue;
+                    if (!isValidSenderMetricsTopic(topicValue)) continue;
+
+                    bool duplicate = false;
+                    for (uint8_t i = 0; i < cfg.availableTopicCount; i++) {
+                        if (strcmp(cfg.availableTopics[i], topicValue) == 0) {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+                    if (duplicate) continue;
+
+                    strlcpy(cfg.availableTopics[cfg.availableTopicCount], topicValue,
+                            sizeof(cfg.availableTopics[cfg.availableTopicCount]));
+
+                    // 從舊資料中查找 lastSeenMs
+                    unsigned long lastSeen = now;  // 預設為當前時間
+                    for (uint8_t j = 0; j < oldCount; j++) {
+                        if (strcmp(oldTopics[j], topicValue) == 0) {
+                            lastSeen = oldLastSeen[j];
+                            break;
+                        }
+                    }
+                    cfg.availableTopicLastSeenMs[cfg.availableTopicCount] = lastSeen;
+                    cfg.availableTopicCount++;
                 }
             }
         }

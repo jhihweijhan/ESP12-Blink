@@ -184,6 +184,12 @@ public:
             _lastOfflineCheckAt = now;
             _store->markOfflineExpired(now, getOfflineTimeoutMs());
         }
+
+        // --- Available topic expiry check (every 30s) ---
+        if ((long)(now - _lastTopicPurgeAt) >= 30000L) {
+            _lastTopicPurgeAt = now;
+            _configMgr->purgeExpiredAvailableTopics(now);
+        }
     }
 
     MqttConnectionState getConnectionState() const { return _state; }
@@ -230,6 +236,8 @@ public:
             Serial.printf("Drop invalid metrics v2 payload on topic: %s\n", topic ? topic : "<null>");
             return;
         }
+
+        _configMgr->addAvailableTopic(topic);
 
         DeviceConfig* cfg = _configMgr->getOrCreateDevice(hostname);
         if (cfg && !cfg->enabled) {
@@ -286,6 +294,7 @@ private:
     unsigned long _lastConnectedAt = 0;
     unsigned long _lastMessageAt = 0;
     unsigned long _lastOfflineCheckAt = 0;
+    unsigned long _lastTopicPurgeAt = 0;
     unsigned long _reconnectingStartMs = 0;
 
     unsigned long getOfflineTimeoutMs() const {
