@@ -85,6 +85,28 @@
     .learn-content a{color:#00d9ff}
     .learn-content ul{margin:8px 0 8px 20px}
     .learn-content li{margin-bottom:4px}
+
+    /* Device actions */
+    .actions{margin-top:20px}
+    .actions-title{font-size:15px;color:#00d9ff;margin-bottom:10px;font-weight:600}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+    .btn-action{flex:1;min-width:140px;padding:12px 16px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s}
+    .btn-action:hover{opacity:.85}
+    .btn-action:disabled{opacity:.5;cursor:not-allowed}
+    .btn-reboot{background:#1e3a5f;color:#5bb8ff}
+    .btn-reset{background:#3d1f1f;color:#ff6b6b}
+
+    /* Confirm overlay */
+    .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+    .overlay.show{display:flex}
+    .confirm-box{background:#16213e;border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center}
+    .confirm-box h3{color:#e0e0e0;margin-bottom:12px;font-size:17px}
+    .confirm-box p{color:#888;font-size:13px;margin-bottom:20px;line-height:1.5}
+    .confirm-box .btn-row{justify-content:center}
+    .btn-cancel{background:#333;color:#aaa;padding:10px 24px;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+    .btn-confirm{padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+    .btn-confirm.reboot{background:#1e3a5f;color:#5bb8ff}
+    .btn-confirm.reset{background:#5f1f1f;color:#ff6b6b}
   </style>
 </head>
 <body>
@@ -153,6 +175,39 @@
           <li><strong>碎片率</strong>：即使總 heap 充足，高碎片率可能導致大區塊分配失敗。</li>
         </ul>
         <p><a href="https://mochi-metrics.github.io/docs/" target="_blank">閱讀完整技術文件 &rarr;</a></p>
+      </div>
+    </div>
+
+    <!-- Device Actions -->
+    <div class="actions">
+      <div class="actions-title">Device Actions</div>
+      <div class="btn-row">
+        <button class="btn-action btn-reboot" id="btn-reboot" onclick="showConfirm('reboot')">Reboot Device</button>
+        <button class="btn-action btn-reset" id="btn-reset" onclick="showConfirm('reset')">Factory Reset</button>
+      </div>
+    </div>
+
+    <!-- Reboot confirm overlay -->
+    <div class="overlay" id="overlay-reboot" onclick="if(event.target===this)hideConfirm('reboot')">
+      <div class="confirm-box">
+        <h3>Reboot Device?</h3>
+        <p>The device will restart. All current settings will be preserved.</p>
+        <div class="btn-row">
+          <button class="btn-cancel" onclick="hideConfirm('reboot')">Cancel</button>
+          <button class="btn-confirm reboot" onclick="doAction('reboot')">Reboot</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Factory reset confirm overlay -->
+    <div class="overlay" id="overlay-reset" onclick="if(event.target===this)hideConfirm('reset')">
+      <div class="confirm-box">
+        <h3>Factory Reset?</h3>
+        <p>This will erase all WiFi and MQTT settings. The device will restart in AP setup mode. This action cannot be undone.</p>
+        <div class="btn-row">
+          <button class="btn-cancel" onclick="hideConfirm('reset')">Cancel</button>
+          <button class="btn-confirm reset" onclick="doAction('reset')">Reset</button>
+        </div>
       </div>
     </div>
 
@@ -287,6 +342,31 @@
       btn.classList.toggle('open');
       var c=btn.nextElementSibling;
       c.classList.toggle('open');
+    }
+
+    function showConfirm(type){
+      document.getElementById('overlay-'+type).classList.add('show');
+    }
+
+    function hideConfirm(type){
+      document.getElementById('overlay-'+type).classList.remove('show');
+    }
+
+    function doAction(type){
+      hideConfirm(type);
+      var url=type==='reboot'?'/api/v2/reboot':'/api/v2/factory-reset';
+      var btn=document.getElementById('btn-'+type);
+      var otherBtn=document.getElementById(type==='reboot'?'btn-reset':'btn-reboot');
+      btn.disabled=true;
+      otherBtn.disabled=true;
+      btn.textContent=type==='reboot'?'Rebooting...':'Resetting...';
+      fetch(url,{method:'POST'}).then(function(r){return r.json();}).then(function(d){
+        btn.textContent=d.message||'Done';
+      }).catch(function(){
+        btn.textContent='Error';
+        btn.disabled=false;
+        otherBtn.disabled=false;
+      });
     }
 
     connectSSE();
