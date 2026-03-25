@@ -176,9 +176,6 @@
       const topics = new Set();
       (cfg.mqtt?.availableTopics || []).forEach(t => topics.add(t));
       (cfg.mqtt?.subscribedTopics || []).forEach(t => topics.add(t));
-      (cfg.devices || []).forEach(d => {
-        if (d && d.hostname) topics.add(topicFromHost(d.hostname));
-      });
 
       topicRows = [];
       Array.from(topics).sort().forEach(topic => {
@@ -254,6 +251,7 @@
 
     function buildSavePayload() {
       const subscribedTopics = [];
+      const availTopics = [];
       const devices = [];
 
       topicRows.forEach(r => {
@@ -264,6 +262,7 @@
           time: parseInt(r.time, 10) || 5,
           enabled: !!r.checked
         });
+        availTopics.push(r.topic);
         if (r.checked) subscribedTopics.push(r.topic);
       });
 
@@ -274,7 +273,8 @@
           topic: document.getElementById('mqttTopic').value,
           user: document.getElementById('mqttUser').value,
           pass: document.getElementById('mqttPass').value,
-          subscribedTopics: subscribedTopics
+          subscribedTopics: subscribedTopics,
+          availableTopics: availTopics
         },
         displayTime: parseInt(document.getElementById('displayTime').value, 10),
         autoCarousel: document.getElementById('autoCarousel').value === '1',
