@@ -1,0 +1,54 @@
+site_name: Mochi-Metrics Documentation
+site_description: IoT system monitoring with ESP8266 TFT display
+site_url: ""
+
+docs_dir: site
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: cyan
+    accent: cyan
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+
+plugins:
+  - search
+  - i18n:
+      default_locale: en
+      material_alternate: true
+      languages:
+        - locale: en
+          name: English
+          build: true
+          default: true
+        - locale: zh
+          name: "繁體中文"
+          build: true
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Learning Path: learning-path.md
+  - Modules:
+      - Firmware: modules/firmware.md
+      - Sender: modules/sender.md
+      - Protocol: modules/protocol.md
