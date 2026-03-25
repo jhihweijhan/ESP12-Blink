@@ -595,6 +595,7 @@ private:
         doc["mqttTestState"] = mqttTestStateToString();
         doc["wifiRSSI"] = WiFi.RSSI();
         doc["wifiChannel"] = WiFi.channel();
+        doc["wifiIP"] = WiFi.localIP().toString();
         doc["uptimeMs"] = millis();
 
         uint32_t freeHeap = ESP.getFreeHeap();

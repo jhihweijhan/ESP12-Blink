@@ -229,6 +229,7 @@
 
         <div style="text-align:left;margin:16px 0">
           <div class="summary-row"><span class="summary-label">WiFi</span><span class="summary-value" id="sumSsid">-</span></div>
+          <div class="summary-row"><span class="summary-label">New IP</span><span class="summary-value" id="sumIP" style="color:#ffb300">-</span></div>
           <div class="summary-row"><span class="summary-label">MQTT</span><span class="summary-value" id="sumMqtt">-</span></div>
         </div>
 
@@ -411,7 +412,9 @@
             if (state === 'success') {
               clearInterval(pollTimer);
               pollTimer = null;
-              showWifiStatus('success', '&#10003; Connected to ' + escHtml(wizardData.ssid));
+              wizardData.newIP = d.wifiIP || '';
+              var ipMsg = wizardData.newIP ? '<br><span style="color:#ffb300;font-size:13px">新 IP: <b>' + escHtml(wizardData.newIP) + '</b></span>' : '';
+              showWifiStatus('success', '&#10003; Connected to ' + escHtml(wizardData.ssid) + ipMsg);
               document.getElementById('btnConnect').style.display = 'none';
               document.getElementById('btnWifiNext').style.display = 'block';
             } else if (state === 'failed') {
@@ -581,6 +584,7 @@
     // Step 4: Done
     function updateSummary() {
       document.getElementById('sumSsid').textContent = wizardData.ssid || '-';
+      document.getElementById('sumIP').textContent = wizardData.newIP || '-';
       document.getElementById('sumMqtt').textContent = (wizardData.mqttServer || '-') + ':' + (wizardData.mqttPort || 1883);
     }
 
@@ -602,7 +606,17 @@
             } else {
               clearInterval(cd);
               statusEl.className = '';
-              statusEl.innerHTML = '<div class="restart-msg">Device is restarting.<br>Connect to your WiFi network and visit<br>the monitor page to view metrics.</div>';
+              var ipHint = wizardData.newIP
+                ? '<br><br><b style="color:#00d9ff">http://' + escHtml(wizardData.newIP) + '/status</b>'
+                : '<br><br>IP 顯示在 ESP 螢幕上';
+              statusEl.innerHTML = '<div class="restart-msg">'
+                + '裝置重啟中...<br><br>'
+                + '<b>接下來請：</b><br>'
+                + '1. 將手機/電腦連回 <b>' + escHtml(wizardData.ssid || 'WiFi') + '</b><br>'
+                + '2. 查看 ESP 螢幕上的新 IP<br>'
+                + '3. 在瀏覽器開啟該 IP 的 /status 頁面'
+                + ipHint
+                + '</div>';
             }
           }, 1000);
         })
