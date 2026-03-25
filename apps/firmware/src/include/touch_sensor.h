@@ -3,71 +3,114 @@
 
 #include <Arduino.h>
 
-// 觸控感測器 — 使用 A0 (ADC) 讀取電容式觸控
-// 基線值約 37，觸碰時升至 44-45，差值約 7-8
-// 使用自適應基線 + 閾值偵測，支援防抖
+// 觸控感測器 — A0 (ADC)，滑動最小值基線，閾值偵測
+// 短按 = TAP（切換裝置），長按 = LONG_PRESS（鎖定/解鎖）
 
 class TouchSensor {
 public:
-    static const uint8_t TOUCH_PIN = A0;
-    static const uint8_t TOUCH_THRESHOLD = 5;       // ADC 變化超過此值視為觸碰
-    static const uint16_t DEBOUNCE_MS = 300;         // 防抖間隔
-    static const uint16_t BASELINE_SAMPLES = 16;     // 基線取樣數
-    static const uint16_t POLL_INTERVAL_MS = 200;    // ADC 讀取間隔（避免干擾 WiFi）
-    static const uint16_t BASELINE_UPDATE_MS = 5000; // 基線更新間隔（未觸碰時）
+    enum Event { NONE, TAP, LONG_PRESS };
+
+    static const uint16_t POLL_INTERVAL_MS = 300;
+    static const uint16_t LONG_PRESS_MS = 1500;   // 長按 1.5 秒
+    static const uint16_t TAP_COOLDOWN_MS = 500;
 
     void begin() {
-        // 取初始基線
-        long sum = 0;
-        for (uint16_t i = 0; i < BASELINE_SAMPLES; i++) {
-            sum += analogRead(TOUCH_PIN);
-            delay(10);
-        }
-        _baseline = sum / BASELINE_SAMPLES;
-        _lastTouchAt = 0;
         _lastPollAt = 0;
-        _lastBaselineUpdate = millis();
-        _touched = false;
+        _touchStartAt = 0;
+        _lastEventAt = 0;
+        _touching = false;
+        _longFired = false;
+        _lastRaw = 0;
+        _histIdx = 0;
+        _histCount = 0;
+        long sum = 0;
+        for (uint8_t i = 0; i < 8; i++) {
+            sum += analogRead(A0);
+            delay(20);
+        }
+        _baseline = sum / 8;
     }
 
-    // 每次 loop 呼叫，回傳 true = 偵測到新的觸碰事件（邊緣觸發）
-    // 內部限速每 200ms 讀一次 ADC，避免干擾 ESP8266 WiFi
-    bool poll() {
+    // 回傳事件：NONE / TAP / LONG_PRESS
+    Event poll() {
         unsigned long now = millis();
-        if (now - _lastPollAt < POLL_INTERVAL_MS) return false;
+        if (now - _lastPollAt < POLL_INTERVAL_MS) {
+            // 即使不讀 ADC，也要檢查長按計時
+            if (_touching && !_longFired && (now - _touchStartAt >= LONG_PRESS_MS)) {
+                _longFired = true;
+                _lastEventAt = now;
+                return LONG_PRESS;
+            }
+            return NONE;
+        }
         _lastPollAt = now;
 
-        int raw = analogRead(TOUCH_PIN);
+        // 多次取樣平均
+        long sum = 0;
+        for (uint8_t i = 0; i < 8; i++) {
+            sum += analogRead(A0);
+            delayMicroseconds(200);
+        }
+        int raw = sum / 8;
+        _lastRaw = raw;
         int diff = raw - _baseline;
 
-        bool currentlyTouched = (diff >= TOUCH_THRESHOLD);
+        // 滑動最小值基線
+        _history[_histIdx] = raw;
+        _histIdx = (_histIdx + 1) % HIST_SIZE;
+        if (_histCount < HIST_SIZE) _histCount++;
+        int minVal = 1024;
+        for (uint8_t i = 0; i < _histCount; i++) {
+            if (_history[i] < minVal) minVal = _history[i];
+        }
+        _baseline = minVal;
 
-        if (currentlyTouched) {
-            if (!_touched && (now - _lastTouchAt >= DEBOUNCE_MS)) {
-                _touched = true;
-                _lastTouchAt = now;
-                return true;  // 新觸碰事件
+        bool isTouching = (diff >= _threshold);
+
+        if (isTouching) {
+            if (!_touching) {
+                // 觸碰開始
+                _touching = true;
+                _touchStartAt = now;
+                _longFired = false;
+            }
+            // 檢查長按
+            if (!_longFired && (now - _touchStartAt >= LONG_PRESS_MS)) {
+                _longFired = true;
+                _lastEventAt = now;
+                return LONG_PRESS;
             }
         } else {
-            _touched = false;
-            // 未觸碰時緩慢更新基線（適應環境變化）
-            if (now - _lastBaselineUpdate >= BASELINE_UPDATE_MS) {
-                _baseline = (_baseline * 7 + raw) / 8;  // 指數移動平均
-                _lastBaselineUpdate = now;
+            if (_touching) {
+                // 觸碰結束
+                _touching = false;
+                if (!_longFired && (now - _lastEventAt >= TAP_COOLDOWN_MS)) {
+                    // 短按（沒有觸發長按）
+                    _lastEventAt = now;
+                    return TAP;
+                }
             }
         }
-        return false;
+        return NONE;
     }
 
     int getBaseline() const { return _baseline; }
-    bool isTouched() const { return _touched; }
+    int getLastRaw() const { return _lastRaw; }
+    bool isTouching() const { return _touching; }
 
 private:
+    static const uint8_t HIST_SIZE = 20;
+    int _history[HIST_SIZE] = {};
+    uint8_t _histIdx = 0;
+    uint8_t _histCount = 0;
     int _baseline = 0;
-    unsigned long _lastTouchAt = 0;
+    int _lastRaw = 0;
+    int _threshold = 2;
     unsigned long _lastPollAt = 0;
-    unsigned long _lastBaselineUpdate = 0;
-    bool _touched = false;
+    unsigned long _touchStartAt = 0;
+    unsigned long _lastEventAt = 0;
+    bool _touching = false;
+    bool _longFired = false;
 };
 
 #endif // TOUCH_SENSOR_H

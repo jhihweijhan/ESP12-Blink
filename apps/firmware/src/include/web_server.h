@@ -13,6 +13,7 @@
 #include "html_status_dashboard_gz.h"
 #include "html_wifi_setup_gz.h"
 #include "monitor_config.h"
+#include "monitor_display.h"
 #include "mqtt_transport.h"
 #include "wifi_manager.h"
 
@@ -30,6 +31,10 @@ public:
 
     void setDeviceStore(DeviceStore* store) {
         _store = store;
+    }
+
+    void setMonitorDisplay(MonitorDisplay* display) {
+        _display = display;
     }
 
     void loop() {
@@ -229,6 +234,7 @@ private:
     MonitorConfigManager* _monitorConfig = nullptr;
     MQTTTransport* _mqtt = nullptr;
     DeviceStore* _store = nullptr;
+    MonitorDisplay* _display = nullptr;
     volatile bool _pendingRestart = false;
     unsigned long _restartAt = 0;
     WifiApplyState _wifiApplyState = WIFI_APPLY_IDLE;
@@ -604,6 +610,13 @@ private:
         doc["maxBlock"] = maxBlock;
         doc["heapFragmentation"] = computeHeapFragmentation(freeHeap, maxBlock);
 
+        if (_display) {
+            doc["displayLocked"] = _display->isLocked();
+            if (_display->isLocked()) {
+                doc["lockedDevice"] = _display->getLockedHostname();
+            }
+        }
+
         if (_store) {
             JsonArray devices = doc["devices"].to<JsonArray>();
             for (uint8_t i = 0; i < MAX_DEVICES; i++) {
@@ -638,7 +651,7 @@ private:
         }
 
         // 使用 snprintf 組裝 JSON 避免 ArduinoJson 動態分配
-        char buf[384];
+        char buf[448];
         int pos = 0;
 
         uint8_t mqttState = _mqtt ? (uint8_t)_mqtt->getConnectionState() : 0;
@@ -671,6 +684,14 @@ private:
                     roundedPercent(slot->frame.ramPctX10));
             }
             pos += snprintf(buf + pos, sizeof(buf) - pos, "]");
+        }
+
+        // Display lock status
+        if (_display && _display->isLocked()) {
+            pos += snprintf(buf + pos, sizeof(buf) - pos,
+                ",\"locked\":true,\"lockedDev\":\"%s\"", _display->getLockedHostname());
+        } else {
+            pos += snprintf(buf + pos, sizeof(buf) - pos, ",\"locked\":false");
         }
 
         pos += snprintf(buf + pos, sizeof(buf) - pos, "}");

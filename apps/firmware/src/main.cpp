@@ -145,6 +145,9 @@ void ensureWebServer() {
     webServer->setMonitorConfig(&monitorConfig);
     webServer->setMQTTTransport(&mqttTransport);
     webServer->setDeviceStore(&deviceStore);
+    if (monitorDisplay) {
+        webServer->setMonitorDisplay(monitorDisplay);
+    }
     webServer->begin();
 }
 
@@ -378,9 +381,31 @@ void loop() {
     }
 
     // 觸控偵測 — 所有模式下都偵測
-    if (touchSensor.poll()) {
-        if (currentMode == MODE_MONITOR && monitorDisplay) {
-            monitorDisplay->nextDevice();
+    {
+        TouchSensor::Event evt = touchSensor.poll();
+        if (evt == TouchSensor::TAP) {
+            if (currentMode == MODE_MONITOR && monitorDisplay) {
+                tft.fillRect(0, 0, 240, 2, COLOR_CYAN);
+                monitorDisplay->nextDevice();
+            }
+        } else if (evt == TouchSensor::LONG_PRESS) {
+            if (currentMode == MODE_MONITOR && monitorDisplay) {
+                monitorDisplay->toggleLock();
+                // 顯示鎖定/解鎖確認訊息 2 秒
+                tft.fillScreen(COLOR_BLACK);
+                if (monitorDisplay->isLocked()) {
+                    tft.drawStringCentered(90, "LOCKED", COLOR_YELLOW, COLOR_BLACK, 2);
+                    DeviceSlot* slot = deviceStore.getOnlineByIndex(0, &monitorConfig);
+                    const char* name = monitorDisplay->getLockedHostname();
+                    if (name[0]) {
+                        tft.drawStringCentered(120, name, COLOR_WHITE, COLOR_BLACK, 1);
+                    }
+                } else {
+                    tft.drawStringCentered(100, "UNLOCKED", COLOR_CYAN, COLOR_BLACK, 2);
+                }
+                delay(1500);
+                monitorDisplay->forceRedraw();
+            }
         }
     }
 

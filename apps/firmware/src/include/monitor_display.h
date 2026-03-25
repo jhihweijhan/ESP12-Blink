@@ -29,8 +29,9 @@ public:
         _lastHostname[0] = '\0';
     }
 
-    // 手動切換到下一個裝置（觸控觸發）
+    // 手動切換到下一個裝置（短按觸發）
     void nextDevice() {
+        if (_locked) return;  // 鎖定時不切換
         uint8_t onlineCount = _store.getOnlineCount(&_config);
         if (onlineCount <= 1) return;
         _currentDevice = (_currentDevice + 1) % onlineCount;
@@ -38,6 +39,26 @@ public:
         _forceRedraw = true;
         _pendingVisibleUpdate = true;
     }
+
+    // 切換鎖定狀態（長按觸發）
+    void toggleLock() {
+        _locked = !_locked;
+        _forceRedraw = true;
+        _pendingVisibleUpdate = true;
+        // 鎖定時記住當前裝置的 hostname
+        if (_locked) {
+            DeviceSlot* slot = _store.getOnlineByIndex(_currentDevice, &_config);
+            if (slot) {
+                strlcpy(_lockedHostname, slot->hostname, sizeof(_lockedHostname));
+            }
+        } else {
+            _lockedHostname[0] = '\0';
+        }
+    }
+
+    bool isLocked() const { return _locked; }
+    const char* getLockedHostname() const { return _lockedHostname; }
+    void forceRedraw() { _forceRedraw = true; _pendingVisibleUpdate = true; }
 
     void notifyMetricsUpdated(const char* hostname) {
         if (!hostname || hostname[0] == '\0') {
@@ -77,12 +98,14 @@ private:
     unsigned long _lastFooterUpdate = 0;
     bool _forceRedraw = true;
     bool _pendingVisibleUpdate = false;
+    bool _locked = false;
+    char _lockedHostname[32] = "";
     char _lastHostname[32] = "";
     char _lastIpStr[20] = "";
     MqttConnectionState _lastMqttState = MqttConnectionState::DISCONNECTED;
 
     void autoRotateIfNeeded(unsigned long now, uint8_t onlineCount) {
-        if (!_config.config.autoCarousel || onlineCount <= 1) {
+        if (_locked || !_config.config.autoCarousel || onlineCount <= 1) {
             return;
         }
 
@@ -160,10 +183,15 @@ private:
             _lastMqttState = MqttConnectionState::DISCONNECTED;
             _ui.drawDeviceHeader(alias, true);
 
-            if (onlineCount > 1) {
-                char indicator[16];
-                snprintf(indicator, sizeof(indicator), "%d/%d", _currentDevice + 1, onlineCount);
-                _tft.drawString(200, 8, indicator, COLOR_GRAY, 0x1082, 1);
+            if (onlineCount > 1 || _locked) {
+                char indicator[20];
+                if (_locked) {
+                    snprintf(indicator, sizeof(indicator), "LOCK %d/%d", _currentDevice + 1, onlineCount);
+                    _tft.drawString(160, 8, indicator, COLOR_YELLOW, 0x1082, 1);
+                } else {
+                    snprintf(indicator, sizeof(indicator), "%d/%d", _currentDevice + 1, onlineCount);
+                    _tft.drawString(200, 8, indicator, COLOR_GRAY, 0x1082, 1);
+                }
             }
 
             strlcpy(_lastHostname, slot->hostname, sizeof(_lastHostname));
