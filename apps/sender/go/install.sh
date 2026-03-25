@@ -227,8 +227,9 @@ WantedBy=default.target
 EOF
 
     systemctl --user daemon-reload
-    systemctl --user enable --now "$SERVICE_NAME"
-    info "Service enabled and started."
+    systemctl --user enable "$SERVICE_NAME"
+    systemctl --user restart "$SERVICE_NAME"
+    info "Service enabled and (re)started."
     echo ""
     systemctl --user status "$SERVICE_NAME" --no-pager || true
 }
