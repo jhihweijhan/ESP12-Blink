@@ -1,0 +1,1006 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="IoT system monitoring with ESP8266 TFT display">
+      
+      
+      
+        <link rel="canonical" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/learning-path/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../modules/firmware/">
+      
+      
+        
+          <link rel="alternate" href="../../learning-path/" hreflang="en">
+        
+          <link rel="alternate" href="./" hreflang="zh">
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Learning Path - Mochi-Metrics Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="cyan" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../" title="Mochi-Metrics Documentation" class="md-header__button md-logo" aria-label="Mochi-Metrics Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Mochi-Metrics Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Learning Path
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="选择当前语言">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../learning-path/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="zh" class="md-select__link">
+              繁體中文
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Learning Path
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../modules/firmware/" class="md-tabs__link">
+          
+  
+  
+  Modules
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../" title="Mochi-Metrics Documentation" class="md-nav__button md-logo" aria-label="Mochi-Metrics Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Mochi-Metrics Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learning Path
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learning Path
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        建議學習順序
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        學習路線
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        路線詳細
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="路線詳細">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        嵌入式 IoT 路線
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        網路通訊路線
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        系統監控路線
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下一步
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modules/firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modules/sender/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sender
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modules/protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        建議學習順序
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        學習路線
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        路線詳細
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="路線詳細">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        嵌入式 IoT 路線
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        網路通訊路線
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        系統監控路線
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下一步
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">學習路線圖<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p>本指南規劃了三條 Mochi-Metrics 學習路線。每條路線標示了對應模組中可學到的具體技術知識。</p>
+<h2 id="_2">建議學習順序<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>先從 <strong>協定規格</strong> 理解資料格式，再依興趣選擇任一路線。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>協定規格 --&gt; 發送器 --&gt; MQTT --&gt; 韌體 --&gt; 顯示
+</code></pre></div>
+<h2 id="_3">學習路線<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph TD
+    Start["Mochi-Metrics&lt;br/&gt;學習路線"]
+
+    Start --&gt; IoT["嵌入式 IoT 路線"]
+    Start --&gt; Net["網路通訊路線"]
+    Start --&gt; Sys["系統監控路線"]
+
+    subgraph Embedded["嵌入式 IoT 路線"]
+        SPI["SPI 協定&lt;br/&gt;- 批次傳輸&lt;br/&gt;- 時脈調校 (40MHz)&lt;br/&gt;- PROGMEM 使用"]
+        TFT["TFT 渲染&lt;br/&gt;- ST7789 驅動&lt;br/&gt;- RGB565 色彩編碼&lt;br/&gt;- 髒區域重繪"]
+        Mem["ESP8266 記憶體&lt;br/&gt;- 80KB RAM 限制&lt;br/&gt;- Heap 碎片化&lt;br/&gt;- LittleFS 持久化"]
+        Loop["協作式迴圈&lt;br/&gt;- 非阻塞設計&lt;br/&gt;- 狀態機&lt;br/&gt;- 計時器排程"]
+        SPI --&gt; TFT --&gt; Mem --&gt; Loop
+    end
+
+    subgraph Network["網路通訊路線"]
+        MQTT["MQTT 發布/訂閱&lt;br/&gt;- Topic 模式&lt;br/&gt;- QoS 等級&lt;br/&gt;- 萬用字元訂閱"]
+        Async["非同步重連&lt;br/&gt;- espMqttClientAsync&lt;br/&gt;- 退避策略&lt;br/&gt;- 靜默偵測"]
+        WiFi["WiFi AP/STA&lt;br/&gt;- Captive Portal&lt;br/&gt;- QR Code 配對&lt;br/&gt;- 多階段重試"]
+        WebAPI["Web 伺服器&lt;br/&gt;- ESPAsyncWebServer&lt;br/&gt;- REST API 設計&lt;br/&gt;- JSON 設定端點"]
+        MQTT --&gt; Async --&gt; WiFi --&gt; WebAPI
+    end
+
+    subgraph SysMon["系統監控路線"]
+        Metrics["作業系統指標收集&lt;br/&gt;- psutil (Python)&lt;br/&gt;- gopsutil (Go)&lt;br/&gt;- CPU, RAM, GPU, 網路, 磁碟"]
+        GPU["GPU 偵測&lt;br/&gt;- nvidia-smi&lt;br/&gt;- rocm-smi&lt;br/&gt;- Linux sysfs hwmon"]
+        JSON["JSON 序列化&lt;br/&gt;- 精簡 Payload&lt;br/&gt;- 位置陣列&lt;br/&gt;- x10 定點編碼"]
+        Deploy["跨平台部署&lt;br/&gt;- Go 靜態編譯&lt;br/&gt;- Docker Compose&lt;br/&gt;- systemd 服務&lt;br/&gt;- 環境變數設定"]
+        Metrics --&gt; GPU --&gt; JSON --&gt; Deploy
+    end
+
+    IoT --&gt; SPI
+    Net --&gt; MQTT
+    Sys --&gt; Metrics</code></pre>
+<h2 id="_4">路線詳細<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<h3 id="iot">嵌入式 IoT 路線<a class="headerlink" href="#iot" title="Permanent link">&para;</a></h3>
+<p>適合對微控制器程式設計與顯示系統感興趣的學習者。</p>
+<table>
+<thead>
+<tr>
+<th>模組</th>
+<th>核心技術</th>
+<th>原始碼檔案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPI 協定</td>
+<td>批次 SPI 傳輸、40MHz 時脈、FIFO 緩衝區（64 bytes）</td>
+<td><code>tft_driver.h</code></td>
+</tr>
+<tr>
+<td>TFT 渲染</td>
+<td>ST7789 驅動、RGB565 色彩、<code>drawCharScaled()</code> 行批次</td>
+<td><code>tft_driver.h</code>、<code>ui_components.h</code></td>
+</tr>
+<tr>
+<td>ESP8266 記憶體</td>
+<td>Heap 監控、<code>ESP.getFreeHeap()</code>、LittleFS 設定</td>
+<td><code>monitor_config.h</code></td>
+</tr>
+<tr>
+<td>協作式迴圈</td>
+<td>Arduino <code>loop()</code>、非阻塞狀態機、計時器排程</td>
+<td><code>main.cpp</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">網路通訊路線<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<p>適合對 IoT 通訊協定與 Web 服務感興趣的學習者。</p>
+<table>
+<thead>
+<tr>
+<th>模組</th>
+<th>核心技術</th>
+<th>原始碼檔案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MQTT 發布/訂閱</td>
+<td>Topic 階層、萬用字元 <code>+</code>、QoS 0/1/2</td>
+<td><code>mqtt_transport.h</code></td>
+</tr>
+<tr>
+<td>非同步重連</td>
+<td>espMqttClientAsync、1-5s 退避、keepalive=0、30s 靜默檢查</td>
+<td><code>mqtt_transport.h</code>、<code>connection_policy.h</code></td>
+</tr>
+<tr>
+<td>WiFi 管理</td>
+<td>AP 模式 Captive Portal、STA 多階段重試、QR Code 設定</td>
+<td><code>wifi_manager.h</code></td>
+</tr>
+<tr>
+<td>Web 伺服器</td>
+<td>ESPAsyncWebServer、REST JSON API、非同步請求處理</td>
+<td><code>web_server.h</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_6">系統監控路線<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
+<p>適合對系統指標收集與跨平台部署感興趣的學習者。</p>
+<table>
+<thead>
+<tr>
+<th>模組</th>
+<th>核心技術</th>
+<th>原始碼檔案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>作業系統指標</td>
+<td><code>psutil</code> / <code>gopsutil</code>、CPU/RAM/磁碟/網路取樣</td>
+<td><code>sender_v2.py</code>、<code>main.go</code></td>
+</tr>
+<tr>
+<td>GPU 偵測</td>
+<td>nvidia-smi CLI、rocm-smi CLI、Linux sysfs <code>/sys/class/drm/</code></td>
+<td><code>metrics_payload.py</code>、<code>payload.go</code></td>
+</tr>
+<tr>
+<td>JSON 序列化</td>
+<td>精簡位置陣列、schema 版本控制（<code>v: 2</code>）</td>
+<td><code>metrics_payload.py</code>、<code>payload.go</code></td>
+</tr>
+<tr>
+<td>部署</td>
+<td>Go 跨平台編譯、Docker Compose、<code>senderctl.sh</code>、環境變數設定</td>
+<td><code>main.go</code>、<code>docker-compose.yml</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="_7">下一步<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../architecture/">系統架構</a> -- 理解完整系統資料流</li>
+<li><a href="../modules/firmware/">韌體模組</a> -- 深入 ESP8266 韌體</li>
+<li><a href="../modules/sender/">發送器模組</a> -- 探索指標收集</li>
+<li><a href="../modules/protocol/">協定模組</a> -- 學習 Metrics v2 規格</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

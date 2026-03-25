@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/architecture/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/architecture/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/architecture/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/learning-path/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/learning-path/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/learning-path/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/modules/firmware/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/modules/firmware/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/firmware/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/modules/protocol/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/modules/protocol/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/protocol/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/modules/sender/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/modules/sender/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/sender/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/zh/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/zh/architecture/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/architecture/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/architecture/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/zh/learning-path/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/learning-path/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/learning-path/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/firmware/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/firmware/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/modules/firmware/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/protocol/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/protocol/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/modules/protocol/"/>
+    </url>
+    <url>
+        <loc>https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/sender/</loc>
+        <lastmod>2026-03-25</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/sender/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jhihweijhan.github.io/Mochi-Metrics/modules/sender/"/>
+    </url>
+</urlset>

@@ -1,0 +1,1224 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="IoT system monitoring with ESP8266 TFT display">
+      
+      
+      
+        <link rel="canonical" href="https://jhihweijhan.github.io/Mochi-Metrics/zh/modules/protocol/">
+      
+      
+        <link rel="prev" href="../sender/">
+      
+      
+      
+        
+          <link rel="alternate" href="../../../modules/protocol/" hreflang="en">
+        
+          <link rel="alternate" href="./" hreflang="zh">
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Protocol - Mochi-Metrics Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="cyan" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../../" title="Mochi-Metrics Documentation" class="md-header__button md-logo" aria-label="Mochi-Metrics Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Mochi-Metrics Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Protocol
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="选择当前语言">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../../modules/protocol/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="zh" class="md-select__link">
+              繁體中文
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../learning-path/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Learning Path
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../firmware/" class="md-tabs__link">
+          
+  
+  
+  Modules
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../" title="Mochi-Metrics Documentation" class="md-nav__button md-logo" aria-label="Mochi-Metrics Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Mochi-Metrics Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../learning-path/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learning Path
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sender/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sender
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocol
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Topic 格式
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#payload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Payload 結構
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        欄位對照表
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="欄位對照表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        頂層欄位
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CPU 陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAM 陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU 陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        網路陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        磁碟陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#x10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        x10 定點編碼（韌體端）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        規則
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        相關頁面
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Topic 格式
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#payload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Payload 結構
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        欄位對照表
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="欄位對照表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        頂層欄位
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CPU 陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAM 陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPU 陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        網路陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        磁碟陣列
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#x10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        x10 定點編碼（韌體端）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        規則
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        相關頁面
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="_1">協定模組<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p>Metrics v2 協定定義了發送器與 ESP8266 韌體之間的 MQTT topic 格式和 JSON payload 結構。</p>
+<h2 id="topic">Topic 格式<a class="headerlink" href="#topic" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sys/agents/{hostname}/metrics/v2
+</code></pre></div>
+<ul>
+<li><code>{hostname}</code> 是發送器的主機名稱（或 <code>SENDER_HOSTNAME</code> 覆寫值）</li>
+<li>韌體從 topic 路徑（非 payload）提取主機名稱，做為信任邊界</li>
+<li>萬用字元訂閱：<code>sys/agents/+/metrics/v2</code> 用於自動發現裝置</li>
+</ul>
+<h2 id="payload">Payload 結構<a class="headerlink" href="#payload" title="Permanent link">&para;</a></h2>
+<p>精簡 JSON，使用固定鍵和位置陣列：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;v&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1739999999000</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;h&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;desk&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;cpu&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">42.4</span><span class="p">,</span><span class="w"> </span><span class="mf">58.2</span><span class="p">],</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;ram&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">67.8</span><span class="p">,</span><span class="w"> </span><span class="mi">12288</span><span class="p">,</span><span class="w"> </span><span class="mi">32768</span><span class="p">],</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">&quot;gpu&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">15.0</span><span class="p">,</span><span class="w"> </span><span class="mf">52.0</span><span class="p">,</span><span class="w"> </span><span class="mf">12.5</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">],</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">&quot;net&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">1024</span><span class="p">,</span><span class="w"> </span><span class="mi">512</span><span class="p">],</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">&quot;disk&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">2048</span><span class="p">,</span><span class="w"> </span><span class="mi">1024</span><span class="p">]</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="_2">欄位對照表<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h3 id="_3">頂層欄位<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>鍵</th>
+<th>型別</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>v</code></td>
+<td>int</td>
+<td>Schema 版本，必須為 <code>2</code></td>
+</tr>
+<tr>
+<td><code>ts</code></td>
+<td>int</td>
+<td>發送器 Unix epoch（毫秒）</td>
+</tr>
+<tr>
+<td><code>h</code></td>
+<td>string</td>
+<td>發送器主機名稱</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cpu">CPU 陣列<a class="headerlink" href="#cpu" title="Permanent link">&para;</a></h3>
+<p><code>cpu: [cpu_percent, cpu_temp_c]</code></p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>型別</th>
+<th>單位</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>float</td>
+<td>%</td>
+<td>CPU 使用率（0-100）</td>
+</tr>
+<tr>
+<td>1</td>
+<td>float</td>
+<td>C</td>
+<td>CPU 溫度（攝氏）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ram">RAM 陣列<a class="headerlink" href="#ram" title="Permanent link">&para;</a></h3>
+<p><code>ram: [ram_percent, ram_used_mb, ram_total_mb]</code></p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>型別</th>
+<th>單位</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>float</td>
+<td>%</td>
+<td>RAM 使用率（0-100）</td>
+</tr>
+<tr>
+<td>1</td>
+<td>int</td>
+<td>MB</td>
+<td>目前使用的 RAM</td>
+</tr>
+<tr>
+<td>2</td>
+<td>int</td>
+<td>MB</td>
+<td>總安裝 RAM</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gpu">GPU 陣列<a class="headerlink" href="#gpu" title="Permanent link">&para;</a></h3>
+<p><code>gpu: [gpu_percent, gpu_temp_c, gpu_mem_percent, gpu_hotspot_c, gpu_mem_temp_c]</code></p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>型別</th>
+<th>單位</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>float</td>
+<td>%</td>
+<td>GPU 使用率（0-100）</td>
+</tr>
+<tr>
+<td>1</td>
+<td>float</td>
+<td>C</td>
+<td>GPU 核心溫度</td>
+</tr>
+<tr>
+<td>2</td>
+<td>float</td>
+<td>%</td>
+<td>GPU 記憶體使用率</td>
+</tr>
+<tr>
+<td>3</td>
+<td>float</td>
+<td>C</td>
+<td>GPU 熱點溫度（不可用時為 0）</td>
+</tr>
+<tr>
+<td>4</td>
+<td>float</td>
+<td>C</td>
+<td>GPU 記憶體溫度（不可用時為 0）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_4">網路陣列<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<p><code>net: [rx_kbps, tx_kbps]</code></p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>型別</th>
+<th>單位</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>int</td>
+<td>kbps</td>
+<td>網路接收速率</td>
+</tr>
+<tr>
+<td>1</td>
+<td>int</td>
+<td>kbps</td>
+<td>網路傳送速率</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">磁碟陣列<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<p><code>disk: [read_kBps, write_kBps]</code></p>
+<table>
+<thead>
+<tr>
+<th>索引</th>
+<th>型別</th>
+<th>單位</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>int</td>
+<td>kB/s</td>
+<td>磁碟讀取速率</td>
+</tr>
+<tr>
+<td>1</td>
+<td>int</td>
+<td>kB/s</td>
+<td>磁碟寫入速率</td>
+</tr>
+</tbody>
+</table>
+<h2 id="x10">x10 定點編碼（韌體端）<a class="headerlink" href="#x10" title="Permanent link">&para;</a></h2>
+<p>ESP8266 韌體以 <code>int16_t</code> 乘 10 儲存浮點值，避免浮點運算：</p>
+<table>
+<thead>
+<tr>
+<th>發送器值</th>
+<th>韌體儲存</th>
+<th>顯示值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>42.4</code>（CPU %）</td>
+<td><code>424</code>（int16_t）</td>
+<td><code>42%</code></td>
+</tr>
+<tr>
+<td><code>58.2</code>（CPU 溫度）</td>
+<td><code>582</code>（int16_t）</td>
+<td><code>58C</code></td>
+</tr>
+<tr>
+<td><code>67.8</code>（RAM %）</td>
+<td><code>678</code>（int16_t）</td>
+<td><code>68%</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>metrics_v2.h</code> 中的轉換輔助函式：</p>
+<ul>
+<li><code>roundedPercent(424)</code> 回傳 <code>42</code></li>
+<li><code>roundedTempC(582)</code> 回傳 <code>58</code></li>
+</ul>
+<h2 id="_6">規則<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
+<ol>
+<li>韌體僅接受符合 <code>/metrics/v2</code> 的 topic</li>
+<li>韌體拒絕 <code>v != 2</code> 的 payload</li>
+<li>建議發送頻率：每主機 1Hz</li>
+<li>發送器應始終傳送所有陣列；不可用的值使用 <code>0</code></li>
+<li>最大 payload 大小：1024 位元組（<code>MQTT_MAX_PAYLOAD_BYTES</code>）</li>
+<li>最大監控裝置數：8（<code>MAX_DEVICES</code>）</li>
+</ol>
+<h2 id="_7">相關頁面<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../architecture/">系統架構</a> -- 完整系統資料流</li>
+<li><a href="../firmware/">韌體</a> -- 韌體如何解析和顯示指標</li>
+<li><a href="../sender/">發送器</a> -- 發送器如何收集和發布指標</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.sections", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
