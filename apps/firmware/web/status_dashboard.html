@@ -73,6 +73,18 @@
     .nav-footer{display:flex;justify-content:center;gap:20px;margin-top:20px;padding-top:16px;border-top:1px solid #222}
     .nav-footer a{color:#00d9ff;text-decoration:none;font-size:14px}
     .nav-footer a:hover{text-decoration:underline}
+
+    /* Learn more */
+    .learn-more{margin-top:20px}
+    .learn-toggle{background:#16213e;border:1px solid #333;border-radius:8px;padding:12px 16px;color:#00d9ff;cursor:pointer;width:100%;text-align:left;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+    .learn-toggle:hover{background:#1e2d4a}
+    .learn-toggle .arrow{transition:transform .2s}
+    .learn-toggle.open .arrow{transform:rotate(90deg)}
+    .learn-content{display:none;background:#16213e;border:1px solid #333;border-top:0;border-radius:0 0 8px 8px;padding:16px;font-size:13px;line-height:1.6;color:#bbb}
+    .learn-content.open{display:block}
+    .learn-content a{color:#00d9ff}
+    .learn-content ul{margin:8px 0 8px 20px}
+    .learn-content li{margin-bottom:4px}
   </style>
 </head>
 <body>
@@ -125,6 +137,22 @@
         <div class="diag-row"><span class="diag-label">WiFi RSSI</span><span id="diag-rssi" class="diag-val">-- dBm</span></div>
         <div class="diag-row"><span class="diag-label">MQTT State</span><span id="diag-mqtt" class="diag-val">--</span></div>
         <div class="diag-row"><span class="diag-label">Uptime</span><span id="diag-uptime" class="diag-val">--</span></div>
+      </div>
+    </div>
+
+    <!-- Learn More -->
+    <div class="learn-more">
+      <button class="learn-toggle" onclick="toggleLearn(this)">
+        了解更多：系統狀態監控 <span class="arrow">&#9654;</span>
+      </button>
+      <div class="learn-content">
+        <p>此頁面透過 <strong>SSE (Server-Sent Events)</strong> 即時推送裝置狀態。瀏覽器與 ESP8266 建立持久連線，伺服器端主動推送更新，無需輪詢。</p>
+        <ul>
+          <li><strong>Heap 記憶體監控</strong>：ESP8266 僅有約 80KB RAM，監控可用 heap 對穩定運行至關重要。當 heap 過低時，WiFi 和 MQTT 連線可能中斷。</li>
+          <li><strong>MQTT 連線三態模型</strong>：Disconnected（斷線）、Reconnecting（重連中，含指數退避）、Connected（已連線）。韌體透過 30 秒靜默檢測識別僵屍連線。</li>
+          <li><strong>碎片率</strong>：即使總 heap 充足，高碎片率可能導致大區塊分配失敗。</li>
+        </ul>
+        <p><a href="https://mochi-metrics.github.io/docs/" target="_blank">閱讀完整技術文件 &rarr;</a></p>
       </div>
     </div>
 
@@ -253,6 +281,12 @@
       var arrow=document.getElementById('diag-arrow');
       body.classList.toggle('collapsed');
       arrow.classList.toggle('collapsed');
+    }
+
+    function toggleLearn(btn){
+      btn.classList.toggle('open');
+      var c=btn.nextElementSibling;
+      c.classList.toggle('open');
     }
 
     connectSSE();

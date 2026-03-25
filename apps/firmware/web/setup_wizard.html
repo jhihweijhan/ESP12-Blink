@@ -92,6 +92,18 @@
     /* Countdown */
     .countdown{font-size:48px;font-weight:700;color:#00d9ff;text-align:center;margin:16px 0}
     .restart-msg{text-align:center;color:#888;font-size:14px;line-height:1.6}
+
+    /* Learn more */
+    .learn-more{margin-top:20px}
+    .learn-toggle{background:#16213e;border:1px solid #333;border-radius:8px;padding:12px 16px;color:#00d9ff;cursor:pointer;width:100%;text-align:left;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+    .learn-toggle:hover{background:#1e2d4a}
+    .learn-toggle .arrow{transition:transform .2s}
+    .learn-toggle.open .arrow{transform:rotate(90deg)}
+    .learn-content{display:none;background:#16213e;border:1px solid #333;border-top:0;border-radius:0 0 8px 8px;padding:16px;font-size:13px;line-height:1.6;color:#bbb}
+    .learn-content.open{display:block}
+    .learn-content a{color:#00d9ff}
+    .learn-content ul{margin:8px 0 8px 20px}
+    .learn-content li{margin-bottom:4px}
   </style>
 </head>
 <body>
@@ -223,6 +235,23 @@
         <div id="doneStatus"></div>
         <button class="btn btn-primary" onclick="finishSetup()" id="btnFinish">Finish Setup</button>
         <button class="btn btn-back" onclick="showStep(2)">Back</button>
+
+        <!-- Learn More -->
+        <div class="learn-more">
+          <button class="learn-toggle" onclick="toggleLearn(this)">
+            了解更多：系統架構 <span class="arrow">&#9654;</span>
+          </button>
+          <div class="learn-content">
+            <p>Mochi Metrics 的資料流：<strong>Sender &rarr; MQTT Broker &rarr; ESP8266 &rarr; TFT 螢幕</strong></p>
+            <ul>
+              <li><strong>Sender</strong>：在電腦上收集 CPU、RAM、GPU 等指標，透過 MQTT 協定發布至 broker。</li>
+              <li><strong>Go Sender</strong>：編譯為單一二進位檔，無需安裝 runtime，適合快速部署。Python Sender 則提供更豐富的 GPU 偵測支援。</li>
+              <li><strong>ESP8266 韌體</strong>：訂閱 MQTT topic，解析 JSON payload，透過 SPI 驅動 240x240 TFT 顯示。使用 cooperative loop 確保 UI 流暢。</li>
+              <li><strong>Metrics v2 協定</strong>：緊湊 JSON 格式，使用陣列而非具名欄位以節省頻寬。</li>
+            </ul>
+            <p><a href="https://mochi-metrics.github.io/docs/" target="_blank">查看架構圖與學習路線 &rarr;</a></p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -579,6 +608,12 @@
           statusEl.textContent = 'Failed to complete setup. Try again.';
           btn.disabled = false;
         });
+    }
+
+    function toggleLearn(btn){
+      btn.classList.toggle('open');
+      var c=btn.nextElementSibling;
+      c.classList.toggle('open');
     }
 
     // Init

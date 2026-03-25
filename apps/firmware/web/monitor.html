@@ -35,6 +35,19 @@
     .topic-item input[type=checkbox] { width: 18px; height: 18px; accent-color: #38bdf8; }
     .topic-item .alias, .topic-item .time { padding: 6px 8px; font-size: 14px; }
     .topic-item .time { text-align: center; }
+
+    /* Learn more */
+    .learn-more{margin-top:20px}
+    .learn-toggle{background:#16213e;border:1px solid #333;border-radius:8px;padding:12px 16px;color:#00d9ff;cursor:pointer;width:100%;text-align:left;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+    .learn-toggle:hover{background:#1e2d4a}
+    .learn-toggle .arrow{transition:transform .2s}
+    .learn-toggle.open .arrow{transform:rotate(90deg)}
+    .learn-content{display:none;background:#16213e;border:1px solid #333;border-top:0;border-radius:0 0 8px 8px;padding:16px;font-size:13px;line-height:1.6;color:#bbb}
+    .learn-content.open{display:block}
+    .learn-content a{color:#00d9ff}
+    .learn-content ul{margin:8px 0 8px 20px}
+    .learn-content li{margin-bottom:4px}
+
     @media (max-width: 700px) {
       .topic-item { grid-template-columns: 28px 1fr; }
       .topic-item .alias, .topic-item .time { width: 100%; }
@@ -105,6 +118,24 @@
     <div style="text-align:center;margin:12px 0">
       <a href="/status" style="display:inline-block;padding:10px 20px;background:#16213e;color:#00d9ff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">Status Dashboard</a>
     </div>
+
+    <!-- Learn More -->
+    <div class="learn-more">
+      <button class="learn-toggle" onclick="toggleLearn(this)">
+        了解更多：MQTT 與裝置管理 <span class="arrow">&#9654;</span>
+      </button>
+      <div class="learn-content">
+        <p><strong>MQTT</strong> 是輕量級的 pub/sub 訊息協定，特別適合 IoT 裝置。Sender 發布指標到 broker，ESP8266 訂閱並即時顯示。</p>
+        <ul>
+          <li><strong>Wildcard 訂閱</strong>：使用 <code>sys/agents/+/metrics/v2</code> 自動探索所有 sender，無需手動新增。</li>
+          <li><strong>白名單模式</strong>：在 Topics 分頁中勾選特定主機，僅訂閱選定的 sender。</li>
+          <li><strong>Topic 格式</strong>：<code>sys/agents/{hostname}/metrics/v2</code>，hostname 從 topic 解析而非 payload，確保信任邊界。</li>
+          <li><strong>離線偵測</strong>：裝置超過設定時間未傳送指標即標記為離線。</li>
+        </ul>
+        <p><a href="https://mochi-metrics.github.io/docs/" target="_blank">閱讀 MQTT 協定完整說明 &rarr;</a></p>
+      </div>
+    </div>
+
     <div id="status" class="status"></div>
   </div>
 
@@ -315,6 +346,12 @@
           }
         })
         .catch(() => {});
+    }
+
+    function toggleLearn(btn){
+      btn.classList.toggle('open');
+      var c=btn.nextElementSibling;
+      c.classList.toggle('open');
     }
 
     loadConfig();
