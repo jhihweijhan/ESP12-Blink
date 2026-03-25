@@ -169,6 +169,23 @@ public:
             }
         });
 
+        _server.on("/api/v2/reboot", HTTP_POST, [this](AsyncWebServerRequest* request) {
+            request->send(200, "application/json", "{\"success\":true,\"message\":\"rebooting in 2s\"}");
+            _pendingRestart = true;
+            _restartAt = millis() + 2000;
+        });
+
+        _server.on("/api/v2/factory-reset", HTTP_POST, [this](AsyncWebServerRequest* request) {
+            LittleFS.remove(WIFI_CONFIG_FILE);
+            LittleFS.remove(MONITOR_CONFIG_FILE);
+            if (_monitorConfig) {
+                _monitorConfig->config.setupComplete = false;
+            }
+            request->send(200, "application/json", "{\"success\":true,\"message\":\"factory reset, rebooting in 2s\"}");
+            _pendingRestart = true;
+            _restartAt = millis() + 2000;
+        });
+
         // SSE 狀態面板
         _statusEvents.onConnect([this](AsyncEventSourceClient *client) {
             if (_statusEvents.count() > SSE_MAX_CLIENTS) {
