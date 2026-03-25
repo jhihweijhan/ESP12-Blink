@@ -86,7 +86,7 @@ graph TD
 
 ## 下一步
 
-- [系統架構](../architecture.md) -- 理解完整系統資料流
-- [韌體模組](../modules/firmware.md) -- 深入 ESP8266 韌體
-- [發送器模組](../modules/sender.md) -- 探索指標收集
-- [協定模組](../modules/protocol.md) -- 學習 Metrics v2 規格
+- [系統架構](architecture.md) -- 理解完整系統資料流
+- [韌體模組](modules/firmware.md) -- 深入 ESP8266 韌體
+- [發送器模組](modules/sender.md) -- 探索指標收集
+- [協定模組](modules/protocol.md) -- 學習 Metrics v2 規格

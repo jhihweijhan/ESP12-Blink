@@ -81,4 +81,4 @@ ESP8266 在 port 80 運行 ESPAsyncWebServer：
 
 ## 協定規格
 
-詳見 [協定模組](../modules/protocol.md) 的 Metrics v2 完整欄位定義與規則。
+詳見 [協定模組](modules/protocol.md) 的 Metrics v2 完整欄位定義與規則。

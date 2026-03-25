@@ -133,6 +133,6 @@ WantedBy=multi-user.target
 
 ## 相關頁面
 
-- [系統架構](../../architecture.md) -- 發送器在系統中的位置
+- [系統架構](../architecture.md) -- 發送器在系統中的位置
 - [協定](protocol.md) -- Metrics v2 payload 格式
 - [韌體](firmware.md) -- 韌體如何消費發送器資料

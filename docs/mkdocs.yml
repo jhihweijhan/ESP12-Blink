@@ -19,6 +19,7 @@ theme:
 plugins:
   - search
   - i18n:
+      docs_structure: folder
       languages:
         - locale: en
           name: English

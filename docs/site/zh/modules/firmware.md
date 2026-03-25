@@ -82,6 +82,6 @@ TFT 驅動使用批次 SPI 傳輸取代逐像素寫入：
 
 ## 相關頁面
 
-- [系統架構](../../architecture.md) -- 系統層級資料流
+- [系統架構](../architecture.md) -- 系統層級資料流
 - [協定](protocol.md) -- Metrics v2 JSON 規格
 - [發送器](sender.md) -- 韌體的資料來源
