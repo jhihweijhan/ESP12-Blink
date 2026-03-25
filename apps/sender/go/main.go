@@ -18,6 +18,7 @@ import (
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/net"
+	"github.com/shirou/gopsutil/v4/sensors"
 )
 
 var (
@@ -549,6 +550,29 @@ func telemetryRank(t gpuTelemetry) gpuTelemetryRank {
 	}
 }
 
+func readCPUTemp() float64 {
+	temps, err := sensors.SensorsTemperatures()
+	if err != nil || len(temps) == 0 {
+		return 0
+	}
+	// 優先查找 CPU 相關感測器（與 Python sender 邏輯一致）
+	preferred := []string{"k10temp", "coretemp", "cpu_thermal", "cpu-thermal"}
+	for _, name := range preferred {
+		for _, t := range temps {
+			if strings.Contains(strings.ToLower(t.SensorKey), name) && t.Temperature > 0 {
+				return math.Round(t.Temperature*10) / 10
+			}
+		}
+	}
+	// fallback：取第一個有效溫度
+	for _, t := range temps {
+		if t.Temperature > 0 && t.Temperature < 150 {
+			return math.Round(t.Temperature*10) / 10
+		}
+	}
+	return 0
+}
+
 func buildPayload(hostname string, sampler *rateSampler) Payload {
 	cpuPct, _ := cpu.Percent(0, false)
 	vm, _ := mem.VirtualMemory()
@@ -565,7 +589,7 @@ func buildPayload(hostname string, sampler *rateSampler) Payload {
 	}
 
 	if len(cpuPct) > 0 {
-		payload.CPU = [2]float64{math.Round(cpuPct[0]*10) / 10, 0}
+		payload.CPU = [2]float64{math.Round(cpuPct[0]*10) / 10, readCPUTemp()}
 	}
 
 	if vm != nil {
