@@ -41,6 +41,7 @@ enum StartupState {
     STARTUP_TRY_SDK_WAIT,
     STARTUP_TRY_SDK_DELAY,
     STARTUP_WIFI_CONNECTED_DELAY,
+    STARTUP_RESET_COUNTDOWN,
     STARTUP_ENTER_AP,
     STARTUP_DONE
 };
@@ -55,6 +56,9 @@ bool wifiStorageReady = false;
 
 const uint8_t MAX_SAVED_CONNECT_ATTEMPTS = 3;
 const uint8_t MAX_SDK_CONNECT_ATTEMPTS = 2;
+const uint8_t RESET_COUNTDOWN_SECONDS = 10;
+unsigned long resetCountdownStartAt = 0;
+int8_t lastCountdownDisplayed = -1;
 
 void scheduleStartupRetryCycle() {
     startupRecoveryCycles++;
@@ -94,6 +98,22 @@ void showConnectingScreen() {
     tft.fillScreen(COLOR_BLACK);
     tft.drawStringCentered(100, "Connecting", COLOR_CYAN, COLOR_BLACK, 2);
     tft.drawStringCentered(130, wifiMgr.ssid.c_str(), COLOR_WHITE, COLOR_BLACK, 1);
+}
+
+void showResetCountdownScreen(uint8_t secondsLeft) {
+    if (lastCountdownDisplayed == -1) {
+        // 首次繪製：清屏 + 靜態文字
+        tft.fillScreen(COLOR_BLACK);
+        tft.drawStringCentered(50, "WiFi Failed", COLOR_RED, COLOR_BLACK, 2);
+        tft.drawStringCentered(85, "Auto-reset in", COLOR_WHITE, COLOR_BLACK, 1);
+        tft.drawStringCentered(170, "Power off to cancel", COLOR_GRAY, COLOR_BLACK, 1);
+    }
+    // 只更新倒數數字（清除舊數字區域）
+    char buf[4];
+    snprintf(buf, sizeof(buf), "%u", secondsLeft);
+    tft.fillRect(0, 105, 240, 50, COLOR_BLACK);
+    tft.drawStringCentered(110, buf, COLOR_YELLOW, COLOR_BLACK, 3);
+    lastCountdownDisplayed = secondsLeft;
 }
 
 void showMQTTConnectingScreen() {
@@ -200,7 +220,9 @@ void processStartup() {
         case STARTUP_TRY_SDK_START:
             if (sdkConnectAttempts >= MAX_SDK_CONNECT_ATTEMPTS) {
                 if (shouldEnterApModeAfterBootRetries(hasSavedWiFiConfig, wifiStorageReady, startupRecoveryCycles)) {
-                    startupState = STARTUP_ENTER_AP;
+                    resetCountdownStartAt = millis();
+                    lastCountdownDisplayed = -1;
+                    startupState = STARTUP_RESET_COUNTDOWN;
                 } else {
                     scheduleStartupRetryCycle();
                 }
@@ -212,7 +234,9 @@ void processStartup() {
                           MAX_SDK_CONNECT_ATTEMPTS);
             if (!wifiMgr.startConnectStoredWiFi()) {
                 if (shouldEnterApModeAfterBootRetries(hasSavedWiFiConfig, wifiStorageReady, startupRecoveryCycles)) {
-                    startupState = STARTUP_ENTER_AP;
+                    resetCountdownStartAt = millis();
+                    lastCountdownDisplayed = -1;
+                    startupState = STARTUP_RESET_COUNTDOWN;
                 } else {
                     scheduleStartupRetryCycle();
                 }
@@ -235,7 +259,9 @@ void processStartup() {
                 } else {
                     if (shouldEnterApModeAfterBootRetries(hasSavedWiFiConfig, wifiStorageReady,
                                                           startupRecoveryCycles)) {
-                        startupState = STARTUP_ENTER_AP;
+                        resetCountdownStartAt = millis();
+                        lastCountdownDisplayed = -1;
+                        startupState = STARTUP_RESET_COUNTDOWN;
                     } else {
                         scheduleStartupRetryCycle();
                     }
@@ -255,6 +281,24 @@ void processStartup() {
                 startMonitorMode();
             }
             break;
+
+        case STARTUP_RESET_COUNTDOWN: {
+            unsigned long elapsed = millis() - resetCountdownStartAt;
+            uint8_t secondsLeft = (elapsed >= RESET_COUNTDOWN_SECONDS * 1000UL)
+                ? 0
+                : RESET_COUNTDOWN_SECONDS - (uint8_t)(elapsed / 1000UL);
+            if (secondsLeft != lastCountdownDisplayed) {
+                showResetCountdownScreen(secondsLeft);
+            }
+            if (secondsLeft == 0) {
+                // 倒數結束：清除 WiFi 設定，重啟進入 AP 模式
+                Serial.println("Countdown finished — factory resetting WiFi config");
+                LittleFS.remove("/wifi.json");
+                delay(200);
+                ESP.restart();
+            }
+            break;
+        }
 
         case STARTUP_ENTER_AP:
             startAPMode();
