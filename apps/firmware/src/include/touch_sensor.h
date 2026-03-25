@@ -14,8 +14,8 @@ public:
     static const uint16_t POLL_INTERVAL_MS = 300;
     static const uint16_t LONG_PRESS_MS = 1500;
     static const uint16_t TAP_COOLDOWN_MS = 500;
-    static const uint8_t TOUCH_THRESHOLD = 3;       // 提高閾值，抗 PWM 雜訊
-    static const uint8_t CONFIRM_COUNT = 2;          // 連續 N 次超閾值才確認觸碰
+    static const uint8_t TOUCH_THRESHOLD = 2;       // 中位數濾波已去雜訊，閾值可保持低
+    static const uint8_t CONFIRM_COUNT = 2;          // 連續 2 次超閾值才確認（300ms×2=600ms）
 
     void begin() {
         resetBaseline();
