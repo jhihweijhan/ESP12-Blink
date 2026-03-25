@@ -13,25 +13,31 @@ public:
     static const uint8_t TOUCH_THRESHOLD = 5;       // ADC 變化超過此值視為觸碰
     static const uint16_t DEBOUNCE_MS = 300;         // 防抖間隔
     static const uint16_t BASELINE_SAMPLES = 16;     // 基線取樣數
-    static const uint16_t BASELINE_UPDATE_MS = 2000; // 基線更新間隔（未觸碰時）
+    static const uint16_t POLL_INTERVAL_MS = 200;    // ADC 讀取間隔（避免干擾 WiFi）
+    static const uint16_t BASELINE_UPDATE_MS = 5000; // 基線更新間隔（未觸碰時）
 
     void begin() {
         // 取初始基線
         long sum = 0;
         for (uint16_t i = 0; i < BASELINE_SAMPLES; i++) {
             sum += analogRead(TOUCH_PIN);
-            delay(5);
+            delay(10);
         }
         _baseline = sum / BASELINE_SAMPLES;
         _lastTouchAt = 0;
+        _lastPollAt = 0;
         _lastBaselineUpdate = millis();
         _touched = false;
     }
 
     // 每次 loop 呼叫，回傳 true = 偵測到新的觸碰事件（邊緣觸發）
+    // 內部限速每 200ms 讀一次 ADC，避免干擾 ESP8266 WiFi
     bool poll() {
-        int raw = analogRead(TOUCH_PIN);
         unsigned long now = millis();
+        if (now - _lastPollAt < POLL_INTERVAL_MS) return false;
+        _lastPollAt = now;
+
+        int raw = analogRead(TOUCH_PIN);
         int diff = raw - _baseline;
 
         bool currentlyTouched = (diff >= TOUCH_THRESHOLD);
@@ -59,6 +65,7 @@ public:
 private:
     int _baseline = 0;
     unsigned long _lastTouchAt = 0;
+    unsigned long _lastPollAt = 0;
     unsigned long _lastBaselineUpdate = 0;
     bool _touched = false;
 };
