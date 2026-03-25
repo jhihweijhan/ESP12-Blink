@@ -33,7 +33,7 @@ prompt_value() {
         else
             read -r -s -p "$label: " input
         fi
-        echo
+        echo >&2
     else
         read -r -p "$label [$default]: " input
     fi
