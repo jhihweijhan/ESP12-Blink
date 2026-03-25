@@ -8,8 +8,10 @@
 #include "include/tft_driver.h"
 #include "include/web_server.h"
 #include "include/wifi_manager.h"
+#include "include/touch_sensor.h"
 
 TFTDriver tft;
+TouchSensor touchSensor;
 QRDisplay qr(tft);
 WiFiManager wifiMgr;
 WebServerManager* webServer = nullptr;
@@ -333,8 +335,10 @@ void setup() {
 
     tft.begin();
     tft.fillScreen(COLOR_BLACK);
+
     tft.drawStringCentered(110, "Starting...", COLOR_WHITE, COLOR_BLACK, 2);
 
+    touchSensor.begin();
     wifiMgr.begin();
 
     monitorConfig.begin();
@@ -371,6 +375,13 @@ void loop() {
 
     if (webServer) {
         webServer->loop();
+    }
+
+    // 觸控偵測 — 所有模式下都偵測
+    if (touchSensor.poll()) {
+        if (currentMode == MODE_MONITOR && monitorDisplay) {
+            monitorDisplay->nextDevice();
+        }
     }
 
     if (currentMode == MODE_MONITOR) {

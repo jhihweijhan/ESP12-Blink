@@ -29,6 +29,16 @@ public:
         _lastHostname[0] = '\0';
     }
 
+    // 手動切換到下一個裝置（觸控觸發）
+    void nextDevice() {
+        uint8_t onlineCount = _store.getOnlineCount(&_config);
+        if (onlineCount <= 1) return;
+        _currentDevice = (_currentDevice + 1) % onlineCount;
+        _lastSwitch = millis();
+        _forceRedraw = true;
+        _pendingVisibleUpdate = true;
+    }
+
     void notifyMetricsUpdated(const char* hostname) {
         if (!hostname || hostname[0] == '\0') {
             _pendingVisibleUpdate = true;
