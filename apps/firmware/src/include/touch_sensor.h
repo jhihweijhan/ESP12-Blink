@@ -12,10 +12,10 @@ public:
     enum Event { NONE, TAP, LONG_PRESS };
 
     static const uint16_t POLL_INTERVAL_MS = 300;
-    static const uint16_t LONG_PRESS_MS = 1500;
-    static const uint16_t TAP_COOLDOWN_MS = 500;
-    static const uint8_t TOUCH_THRESHOLD = 2;       // 中位數濾波已去雜訊，閾值可保持低
-    static const uint8_t CONFIRM_COUNT = 2;          // 連續 2 次超閾值才確認（300ms×2=600ms）
+    static const uint16_t LONG_PRESS_MS = 2500;      // 長按 2.5 秒才鎖定/解鎖
+    static const uint16_t TAP_COOLDOWN_MS = 800;
+    static const uint8_t TOUCH_THRESHOLD = 2;
+    static const uint8_t CONFIRM_COUNT = 3;           // 連續 3 次超閾值才確認（300ms×3=900ms 持續觸碰）
 
     void begin() {
         resetBaseline();
