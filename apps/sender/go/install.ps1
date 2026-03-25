@@ -237,7 +237,7 @@ if (Test-Path `$envFile) {
         -AllowStartIfOnBatteries `
         -DontStopIfGoingOnBatteries `
         -RestartCount 3 `
-        -RestartInterval (New-TimeSpan -Seconds 30)
+        -RestartInterval (New-TimeSpan -Minutes 1)
 
     Register-ScheduledTask `
         -TaskName $TaskName `
