@@ -231,9 +231,13 @@ if (Test-Path `$envFile) {
     $wrapperContent | Out-File -FilePath $WrapperScript -Encoding UTF8
     Write-Info "Created wrapper: $WrapperScript"
 
-    # Remove existing task if present
+    # Stop and remove existing task if present
     $existing = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     if ($existing) {
+        Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        # Kill any running sender process to release the old binary
+        Get-Process -Name "mochi-sender" -ErrorAction SilentlyContinue | Stop-Process -Force
+        Start-Sleep -Seconds 1
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
     }
 
