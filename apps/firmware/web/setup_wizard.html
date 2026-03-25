@@ -321,8 +321,8 @@
           var html = '';
           data.forEach(function(n) {
             var signal = signalBars(n.rssi);
-            var lock = n.encryption > 0 ? '&#128274;' : '';
-            html += '<div class="wifi-item" onclick="selectWifi(\'' + escHtml(n.ssid) + '\',' + (n.encryption > 0 ? 'true' : 'false') + ')" data-ssid="' + escHtml(n.ssid) + '">';
+            var lock = n.secure ? '&#128274;' : '';
+            html += '<div class="wifi-item" onclick="selectWifi(\'' + escHtml(n.ssid) + '\',' + (n.secure ? 'true' : 'false') + ')" data-ssid="' + escHtml(n.ssid) + '">';
             html += '<span class="wifi-ssid">' + escHtml(n.ssid) + '</span>';
             html += '<span class="wifi-meta"><span class="wifi-signal">' + signal + '</span><span class="wifi-lock">' + lock + '</span></span>';
             html += '</div>';
@@ -512,10 +512,12 @@
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-          mqttServer: server,
-          mqttPort: port,
-          mqttUser: user,
-          mqttPass: pass
+          mqtt: {
+            server: server,
+            port: port,
+            user: user,
+            pass: pass
+          }
         })
       })
       .then(function(r) { return r.json(); })
@@ -554,9 +556,10 @@
       var ip = wizardData.mqttServer || '192.168.1.100';
       var port = wizardData.mqttPort || 1883;
 
-      var linuxCmd = 'MQTT_HOST=' + ip + ' MQTT_PORT=' + port + ' \\\n  pip install mochi-metrics-sender && \\\n  mochi-sender';
-      var macCmd = linuxCmd;
-      var winCmd = '$env:MQTT_HOST="' + ip + '"\n$env:MQTT_PORT="' + port + '"\npip install mochi-metrics-sender\nmochi-sender';
+      var repo = 'https://github.com/mochi-metrics/Mochi-Metrics.git';
+      var linuxCmd = 'git clone ' + repo + '\ncd Mochi-Metrics/apps/sender/go\nbash install.sh --mqtt-host=' + ip + ' --mqtt-port=' + port;
+      var macCmd = 'git clone ' + repo + '\ncd Mochi-Metrics/apps/sender/go\nbash install-macos.sh --mqtt-host=' + ip + ' --mqtt-port=' + port;
+      var winCmd = 'git clone ' + repo + '\ncd Mochi-Metrics\\apps\\sender\\go\npowershell install.ps1 -MqttHost ' + ip + ' -MqttPort ' + port;
 
       document.getElementById('cmd-linux').textContent = linuxCmd;
       document.getElementById('cmd-macos').textContent = macCmd;
