@@ -154,9 +154,10 @@ public:
 
         WiFi.persistent(true);
         WiFi.setAutoReconnect(true);
-        WiFi.mode(WIFI_STA);
+        // AP 模式下使用 AP+STA 雙模，保持 AP 讓瀏覽器能接收連線結果
+        WiFi.mode(isAPMode ? WIFI_AP_STA : WIFI_STA);
         delay(30);
-        WiFi.disconnect();
+        WiFi.disconnect(false);  // false = 不關閉 WiFi 模式
         delay(80);
 
         // 嘗試使用已完成的非同步掃描結果進行 BSSID 定向連線
