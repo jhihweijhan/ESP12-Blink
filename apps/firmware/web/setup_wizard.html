@@ -195,28 +195,15 @@
       <div class="card">
         <h2>Sender</h2>
         <p class="subtitle">Install metrics sender on your computer</p>
-        <p style="font-size:13px;color:#999;margin-bottom:16px">Run a sender on each computer you want to monitor.</p>
-
-        <div class="tabs" id="senderTabs">
-          <div class="tab" data-tab="linux" onclick="showSenderTab('linux')">Linux</div>
-          <div class="tab" data-tab="macos" onclick="showSenderTab('macos')">macOS</div>
-          <div class="tab" data-tab="windows" onclick="showSenderTab('windows')">Windows</div>
+        <p style="font-size:13px;color:#ccc;margin:16px 0;line-height:1.6">
+          設定完成後，需要在你的電腦上安裝 <b>Sender</b> 來發送 CPU / RAM / GPU 等指標。
+        </p>
+        <div style="background:#1a1a2e;border-radius:8px;padding:14px;margin-bottom:16px">
+          <p style="font-size:13px;color:#ffb300;margin-bottom:8px">&#9888; 安裝指令將在完成設定後，顯示於狀態面板頁面</p>
+          <p style="font-size:12px;color:#888">完成設定 → 連回你的 WiFi → 開啟 ESP 螢幕上的新 IP → 在狀態面板找到安裝指南</p>
         </div>
 
-        <div id="panel-linux" class="tab-panel">
-          <div class="cmd-block" id="cmd-linux"></div>
-          <button class="btn-copy" onclick="copyCmd('linux')">Copy</button>
-        </div>
-        <div id="panel-macos" class="tab-panel">
-          <div class="cmd-block" id="cmd-macos"></div>
-          <button class="btn-copy" onclick="copyCmd('macos')">Copy</button>
-        </div>
-        <div id="panel-windows" class="tab-panel">
-          <div class="cmd-block" id="cmd-windows"></div>
-          <button class="btn-copy" onclick="copyCmd('windows')">Copy</button>
-        </div>
-
-        <button class="btn btn-primary" onclick="showStep(3)" style="margin-top:16px">Next</button>
+        <button class="btn btn-primary" onclick="showStep(3)" style="margin-top:8px">Next</button>
         <button class="btn btn-back" onclick="showStep(1)">Back</button>
       </div>
     </div>
@@ -275,7 +262,6 @@
       });
       currentStep = n;
       updateProgressBar(n);
-      if (n === 2) updateSenderCmds();
       if (n === 3) updateSummary();
     }
 
@@ -538,49 +524,6 @@
     }
 
     // Step 3: Sender
-    function detectPlatform() {
-      var ua = navigator.userAgent.toLowerCase();
-      if (ua.indexOf('win') !== -1) return 'windows';
-      if (ua.indexOf('mac') !== -1) return 'macos';
-      return 'linux';
-    }
-
-    function showSenderTab(tab) {
-      document.querySelectorAll('#senderTabs .tab').forEach(function(t) {
-        t.classList.toggle('active', t.getAttribute('data-tab') === tab);
-      });
-      ['linux','macos','windows'].forEach(function(p) {
-        var panel = document.getElementById('panel-' + p);
-        panel.className = (p === tab) ? 'tab-panel active' : 'tab-panel';
-      });
-    }
-
-    function updateSenderCmds() {
-      var ip = wizardData.mqttServer || '192.168.1.100';
-      var port = wizardData.mqttPort || 1883;
-
-      var repo = 'https://github.com/mochi-metrics/Mochi-Metrics.git';
-      var linuxCmd = 'git clone ' + repo + '\ncd Mochi-Metrics/apps/sender/go\nbash install.sh --mqtt-host=' + ip + ' --mqtt-port=' + port;
-      var macCmd = 'git clone ' + repo + '\ncd Mochi-Metrics/apps/sender/go\nbash install-macos.sh --mqtt-host=' + ip + ' --mqtt-port=' + port;
-      var winCmd = 'git clone ' + repo + '\ncd Mochi-Metrics\\apps\\sender\\go\npowershell install.ps1 -MqttHost ' + ip + ' -MqttPort ' + port;
-
-      document.getElementById('cmd-linux').textContent = linuxCmd;
-      document.getElementById('cmd-macos').textContent = macCmd;
-      document.getElementById('cmd-windows').textContent = winCmd;
-
-      showSenderTab(detectPlatform());
-    }
-
-    function copyCmd(platform) {
-      var text = document.getElementById('cmd-' + platform).textContent;
-      navigator.clipboard.writeText(text).then(function() {
-        var panel = document.getElementById('panel-' + platform);
-        var btn = panel.querySelector('.btn-copy');
-        btn.textContent = 'Copied!';
-        setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
-      }).catch(function() {});
-    }
-
     // Step 4: Done
     function updateSummary() {
       document.getElementById('sumSsid').textContent = wizardData.ssid || '-';

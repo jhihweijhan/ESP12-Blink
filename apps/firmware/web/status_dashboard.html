@@ -86,6 +86,10 @@
     .learn-content ul{margin:8px 0 8px 20px}
     .learn-content li{margin-bottom:4px}
 
+    /* Sender tabs */
+    .sender-tab{background:#334;color:#888;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer}
+    .sender-tab.active{background:#00d9ff;color:#fff}
+
     /* Device actions */
     .actions{margin-top:20px}
     .actions-title{font-size:15px;color:#00d9ff;margin-bottom:10px;font-weight:600}
@@ -175,6 +179,24 @@
           <li><strong>碎片率</strong>：即使總 heap 充足，高碎片率可能導致大區塊分配失敗。</li>
         </ul>
         <p><a href="https://mochi-metrics.github.io/docs/" target="_blank">閱讀完整技術文件 &rarr;</a></p>
+      </div>
+    </div>
+
+    <!-- Sender Install Guide -->
+    <div class="learn-more" id="sender-guide">
+      <button class="learn-toggle" onclick="toggleLearn(this)">
+        Sender 安裝指南 <span class="arrow">&#9654;</span>
+      </button>
+      <div class="learn-content">
+        <p style="margin-bottom:12px">在每台要監控的電腦上安裝 Sender，它會自動發送 CPU / RAM / GPU 指標到 MQTT broker。</p>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="sender-tab active" onclick="showSenderTab('linux',this)">Linux</button>
+          <button class="sender-tab" onclick="showSenderTab('macos',this)">macOS</button>
+          <button class="sender-tab" onclick="showSenderTab('windows',this)">Windows</button>
+        </div>
+        <div id="sender-cmd" style="background:#1a1a2e;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;color:#e0e0e0;margin-bottom:8px"></div>
+        <button style="background:#334;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer" onclick="copySenderCmd()">Copy</button>
+        <p style="font-size:12px;color:#888;margin-top:10px">需要 <a href="https://go.dev/dl/" target="_blank" style="color:#00d9ff">Go 1.22+</a> 和 <a href="https://git-scm.com/" target="_blank" style="color:#00d9ff">Git</a>。安裝後 Sender 會自動註冊為系統服務。</p>
       </div>
     </div>
 
@@ -369,6 +391,45 @@
       });
     }
 
+    // Sender install guide
+    var senderPlatform='linux';
+    var senderConfig={host:'',port:1883};
+
+    function initSenderGuide(){
+      fetch('/api/v2/config').then(function(r){return r.json();}).then(function(cfg){
+        senderConfig.host=cfg.mqtt&&cfg.mqtt.server||location.hostname;
+        senderConfig.port=cfg.mqtt&&cfg.mqtt.port||1883;
+        updateSenderCmd();
+      }).catch(function(){
+        senderConfig.host=location.hostname;
+        updateSenderCmd();
+      });
+    }
+
+    function showSenderTab(tab,btn){
+      senderPlatform=tab;
+      document.querySelectorAll('.sender-tab').forEach(function(t){t.classList.remove('active');});
+      if(btn)btn.classList.add('active');
+      updateSenderCmd();
+    }
+
+    function updateSenderCmd(){
+      var h=senderConfig.host,p=senderConfig.port;
+      var repo='https://github.com/mochi-metrics/Mochi-Metrics.git';
+      var cmds={
+        linux:'git clone '+repo+'\ncd Mochi-Metrics/apps/sender/go\nbash install.sh --mqtt-host='+h+' --mqtt-port='+p,
+        macos:'git clone '+repo+'\ncd Mochi-Metrics/apps/sender/go\nbash install-macos.sh --mqtt-host='+h+' --mqtt-port='+p,
+        windows:'git clone '+repo+'\ncd Mochi-Metrics\\apps\\sender\\go\npowershell install.ps1 -MqttHost '+h+' -MqttPort '+p
+      };
+      document.getElementById('sender-cmd').textContent=cmds[senderPlatform]||cmds.linux;
+    }
+
+    function copySenderCmd(){
+      var text=document.getElementById('sender-cmd').textContent;
+      navigator.clipboard.writeText(text).then(function(){}).catch(function(){});
+    }
+
+    initSenderGuide();
     connectSSE();
   </script>
 </body>
