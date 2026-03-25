@@ -3,36 +3,36 @@
 
 #include <Arduino.h>
 
-// 觸控感測器 — A0 (ADC)，中位數濾波 + 滑動基線
-// PWM 背光會在 ADC 上產生雜訊，需要中位數濾波去除尖峰
-// 短按 = TAP（切換裝置），長按 = LONG_PRESS（鎖定/解鎖）
+// 觸控感測器 — A0 (ADC)，中位數濾波 + 持續時間判斷
+// 按住 1~3 秒 = TAP（切換裝置），按住 >3 秒 = LONG_PRESS（鎖定/解鎖）
+// 放手後根據持續時間決定事件類型
 
 class TouchSensor {
 public:
     enum Event { NONE, TAP, LONG_PRESS };
 
     static const uint16_t POLL_INTERVAL_MS = 300;
-    static const uint16_t LONG_PRESS_MS = 2500;      // 長按 2.5 秒才鎖定/解鎖
-    static const uint16_t TAP_COOLDOWN_MS = 800;
+    static const uint16_t TAP_MIN_MS = 1000;          // 最少按住 1 秒才算 TAP
+    static const uint16_t LONG_PRESS_MS = 3000;       // 按住 3 秒以上 = 鎖定
+    static const uint16_t EVENT_COOLDOWN_MS = 1000;
     static const uint8_t TOUCH_THRESHOLD = 2;
-    static const uint8_t CONFIRM_COUNT = 3;           // 連續 3 次超閾值才確認（300ms×3=900ms 持續觸碰）
+    static const uint8_t CONFIRM_COUNT = 3;            // 連續 3 次超閾值（900ms）
 
     void begin() {
         resetBaseline();
     }
 
-    // 重設基線（亮度改變後呼叫）
     void resetBaseline() {
         _lastPollAt = 0;
         _touchStartAt = 0;
         _lastEventAt = 0;
         _touching = false;
+        _confirmed = false;
         _longFired = false;
         _lastRaw = 0;
         _histIdx = 0;
         _histCount = 0;
         _confirmHits = 0;
-        // 靜默期：重設後 1 秒不偵測，讓基線穩定
         _silentUntil = millis() + 1000;
         long sum = 0;
         for (uint8_t i = 0; i < 16; i++) {
@@ -44,24 +44,22 @@ public:
 
     Event poll() {
         unsigned long now = millis();
-
-        // 靜默期不偵測
         if (now < _silentUntil) return NONE;
 
-        if (now - _lastPollAt < POLL_INTERVAL_MS) {
-            if (_touching && !_longFired && (now - _touchStartAt >= LONG_PRESS_MS)) {
-                _longFired = true;
-                _lastEventAt = now;
-                return LONG_PRESS;
-            }
-            return NONE;
+        // 長按偵測（不等 ADC poll 間隔）
+        if (_confirmed && !_longFired && (now - _touchStartAt >= LONG_PRESS_MS)) {
+            _longFired = true;
+            _lastEventAt = now;
+            return LONG_PRESS;
         }
+
+        if (now - _lastPollAt < POLL_INTERVAL_MS) return NONE;
         _lastPollAt = now;
 
         int raw = readMedian();
         _lastRaw = raw;
 
-        // 滑動最小值基線（用中位數濾波後的值）
+        // 滑動最小值基線
         _history[_histIdx] = raw;
         _histIdx = (_histIdx + 1) % HIST_SIZE;
         if (_histCount < HIST_SIZE) _histCount++;
@@ -76,35 +74,36 @@ public:
 
         if (aboveThreshold) {
             _confirmHits++;
-            // 需要連續 N 次超閾值才確認（過濾雜訊尖峰）
-            if (_confirmHits >= CONFIRM_COUNT) {
-                if (!_touching) {
-                    _touching = true;
-                    _touchStartAt = now;
-                    _longFired = false;
-                }
-                if (!_longFired && (now - _touchStartAt >= LONG_PRESS_MS)) {
-                    _longFired = true;
-                    _lastEventAt = now;
-                    return LONG_PRESS;
-                }
+            if (_confirmHits >= CONFIRM_COUNT && !_confirmed) {
+                _confirmed = true;
+                _touchStartAt = now;
+                _longFired = false;
             }
         } else {
-            _confirmHits = 0;
-            if (_touching) {
-                _touching = false;
-                if (!_longFired && (now - _lastEventAt >= TAP_COOLDOWN_MS)) {
+            // 放手 — 根據持續時間判斷事件
+            if (_confirmed) {
+                _confirmed = false;
+                unsigned long held = now - _touchStartAt;
+
+                if (_longFired) {
+                    // 長按已在按住時觸發，放手不再觸發
+                } else if (held >= TAP_MIN_MS && (now - _lastEventAt >= EVENT_COOLDOWN_MS)) {
+                    // 按住 1~3 秒 = TAP
                     _lastEventAt = now;
+                    _confirmHits = 0;
+                    _touching = false;
                     return TAP;
                 }
             }
+            _confirmHits = 0;
+            _touching = false;
         }
         return NONE;
     }
 
     int getBaseline() const { return _baseline; }
     int getLastRaw() const { return _lastRaw; }
-    bool isTouching() const { return _touching; }
+    bool isTouching() const { return _confirmed; }
 
 private:
     static const uint8_t HIST_SIZE = 20;
@@ -119,16 +118,15 @@ private:
     unsigned long _lastEventAt = 0;
     unsigned long _silentUntil = 0;
     bool _touching = false;
+    bool _confirmed = false;
     bool _longFired = false;
 
-    // 中位數濾波：取 5 次讀數的中位數，去除 PWM 雜訊尖峰
     int readMedian() {
         int samples[5];
         for (uint8_t i = 0; i < 5; i++) {
             samples[i] = analogRead(A0);
             delayMicroseconds(300);
         }
-        // 簡易排序取中位數
         for (uint8_t i = 0; i < 4; i++) {
             for (uint8_t j = i + 1; j < 5; j++) {
                 if (samples[j] < samples[i]) {
@@ -138,7 +136,7 @@ private:
                 }
             }
         }
-        return samples[2];  // 中位數
+        return samples[2];
     }
 };
 
