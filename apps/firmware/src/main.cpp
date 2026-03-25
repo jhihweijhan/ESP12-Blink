@@ -94,10 +94,21 @@ void showConnectedScreen() {
     tft.drawStringCentered(210, wifiMgr.localIP.c_str(), COLOR_YELLOW, COLOR_BLACK, 1);
 }
 
-void showConnectingScreen() {
+void showConnectingScreen(uint8_t attempt = 0, uint8_t maxAttempts = 0) {
     tft.fillScreen(COLOR_BLACK);
-    tft.drawStringCentered(100, "Connecting", COLOR_CYAN, COLOR_BLACK, 2);
-    tft.drawStringCentered(130, wifiMgr.ssid.c_str(), COLOR_WHITE, COLOR_BLACK, 1);
+    tft.drawStringCentered(90, "Connecting", COLOR_CYAN, COLOR_BLACK, 2);
+    tft.drawStringCentered(120, wifiMgr.ssid.c_str(), COLOR_WHITE, COLOR_BLACK, 1);
+    if (attempt > 0 && maxAttempts > 0) {
+        char buf[20];
+        snprintf(buf, sizeof(buf), "Attempt %u/%u", attempt, maxAttempts);
+        tft.drawStringCentered(150, buf, COLOR_GRAY, COLOR_BLACK, 1);
+    }
+    if (startupRecoveryCycles > 0) {
+        char buf2[20];
+        snprintf(buf2, sizeof(buf2), "Cycle %u/%u", startupRecoveryCycles + 1,
+                 MAX_WIFI_RECOVERY_CYCLES_WITH_SAVED_CONFIG);
+        tft.drawStringCentered(170, buf2, COLOR_GRAY, COLOR_BLACK, 1);
+    }
 }
 
 void showResetCountdownScreen(uint8_t secondsLeft) {
@@ -184,6 +195,7 @@ void processStartup() {
                 break;
             }
             savedConnectAttempts++;
+            showConnectingScreen(savedConnectAttempts, MAX_SAVED_CONNECT_ATTEMPTS);
             Serial.printf("WiFi connect attempt %u/%u (from /wifi.json)\n", savedConnectAttempts,
                           MAX_SAVED_CONNECT_ATTEMPTS);
             if (!wifiMgr.startConnectWiFi()) {
@@ -228,8 +240,8 @@ void processStartup() {
                 }
                 break;
             }
-            showConnectingScreen();
             sdkConnectAttempts++;
+            showConnectingScreen(sdkConnectAttempts, MAX_SDK_CONNECT_ATTEMPTS);
             Serial.printf("WiFi connect attempt %u/%u (from SDK)\n", sdkConnectAttempts,
                           MAX_SDK_CONNECT_ATTEMPTS);
             if (!wifiMgr.startConnectStoredWiFi()) {
@@ -291,11 +303,14 @@ void processStartup() {
                 showResetCountdownScreen(secondsLeft);
             }
             if (secondsLeft == 0) {
-                // 倒數結束：清除 WiFi 設定，重啟進入 AP 模式
-                Serial.println("Countdown finished — factory resetting WiFi config");
+                // 倒數結束：清除 WiFi 設定，直接進入 AP 模式（不重啟，避免 SDK 殘留設定循環）
+                Serial.println("Countdown finished — clearing WiFi config, entering AP mode");
                 LittleFS.remove("/wifi.json");
-                delay(200);
-                ESP.restart();
+                WiFi.disconnect(true);   // true = 同時清除 SDK 儲存的設定
+                WiFi.mode(WIFI_OFF);
+                delay(100);
+                hasSavedWiFiConfig = false;
+                startupState = STARTUP_ENTER_AP;
             }
             break;
         }
