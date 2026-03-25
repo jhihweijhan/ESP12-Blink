@@ -141,6 +141,11 @@ func readGPUTelemetry() (usage, temp, memPct, hotspot, memTemp float64) {
 		return parsed.usage, parsed.temp, parsed.memPct, parsed.hotspot, parsed.memTemp
 	}
 
+	// Windows fallback: D3DKMT API (supports NVIDIA/AMD/Intel via WDDM)
+	if d3kTemp, ok := readGPUTempD3DKMT(); ok && d3kTemp > 0 {
+		return 0, d3kTemp, 0, 0, 0
+	}
+
 	return 0, 0, 0, 0, 0
 }
 
