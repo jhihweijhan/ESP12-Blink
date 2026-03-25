@@ -4,6 +4,7 @@
     Mochi Metrics Go Sender - Windows Installer
 .DESCRIPTION
     Compiles the Go sender, installs it, and registers a Scheduled Task for auto-start at logon.
+    IMPORTANT: Run this script as Administrator (right-click PowerShell -> Run as Administrator).
 .PARAMETER MqttHost
     MQTT broker host (default: 127.0.0.1)
 .PARAMETER MqttPort
@@ -28,6 +29,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# --- Admin Check ---
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "ERROR: This script requires Administrator privileges." -ForegroundColor Red
+    Write-Host "Right-click PowerShell -> 'Run as Administrator', then re-run this script." -ForegroundColor Yellow
+    exit 1
+}
 
 $BinaryName = "mochi-sender.exe"
 $InstallDir = "$env:LOCALAPPDATA\MochiSender"

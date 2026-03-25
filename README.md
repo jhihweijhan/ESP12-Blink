@@ -99,9 +99,9 @@ cd apps/sender/python && pip install -e . && python sender_v2.py
 |------|------|---------|
 | Linux | `bash apps/sender/go/install.sh` | systemd user service |
 | macOS | `bash apps/sender/go/install-macos.sh` | launchd agent |
-| Windows | `powershell apps/sender/go/install.ps1` | Scheduled Task |
+| Windows | `powershell apps/sender/go/install.ps1` (**以系統管理員執行**) | Scheduled Task |
 
-所有腳本支援 `--mqtt-host=IP` 參數和 `--uninstall` 卸載。
+所有腳本支援 `--mqtt-host=IP`（Windows: `-MqttHost IP`）參數和 `--uninstall`（Windows: `-Uninstall`）卸載。
 
 ---
 
