@@ -252,12 +252,16 @@ if (Test-Path `$envFile) {
         -RestartCount 3 `
         -RestartInterval (New-TimeSpan -Minutes 1)
 
+    # RunLevel Highest: required for WMI MSAcpi_ThermalZoneTemperature (CPU temp)
+    $principal = New-ScheduledTaskPrincipal -UserId "$env:USERNAME" -LogonType Interactive -RunLevel Highest
+
     try {
         Register-ScheduledTask `
             -TaskName $TaskName `
             -Action $action `
             -Trigger $trigger `
             -Settings $settings `
+            -Principal $principal `
             -Description "Mochi Metrics Sender (Go)" `
             -ErrorAction Stop | Out-Null
     } catch {
