@@ -3,6 +3,7 @@ site_description: IoT system monitoring with ESP8266 TFT display
 site_url: ""
 
 docs_dir: site
+site_dir: _build
 
 theme:
   name: material
@@ -18,8 +19,6 @@ theme:
 plugins:
   - search
   - i18n:
-      default_locale: en
-      material_alternate: true
       languages:
         - locale: en
           name: English

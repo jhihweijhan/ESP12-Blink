@@ -17,3 +17,5 @@ apps/firmware/.vscode/
 AGENTS.md
 skills/
 original_firmware.bin
+docs/_build/
+docs/.venv/
