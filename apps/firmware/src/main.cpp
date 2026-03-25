@@ -346,6 +346,7 @@ void setup() {
 
     monitorConfig.begin();
     monitorConfig.load();
+    tft.setBrightness(monitorConfig.config.brightness);
 
     wifiStorageReady = wifiMgr.isStorageReady();
     hasSavedWiFiConfig = wifiMgr.loadConfig();

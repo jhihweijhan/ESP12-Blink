@@ -89,6 +89,9 @@ struct MonitorConfig {
     // 離線判定設定
     uint16_t offlineTimeoutSec;   // 幾秒無更新視為離線
 
+    // 顯示設定
+    uint8_t brightness;           // 背光亮度 0-100%
+
     // 設定精靈狀態
     bool setupComplete;           // 首次設定是否已完成
 };
@@ -146,6 +149,7 @@ public:
 
         // 離線判定預設
         config.offlineTimeoutSec = DEFAULT_OFFLINE_TIMEOUT_SEC;
+        config.brightness = 70;
 
         // 設定精靈預設
         config.setupComplete = false;
@@ -234,6 +238,7 @@ public:
         config.defaultDisplayTime = doc["displayTime"] | 5;
         config.autoCarousel = doc["autoCarousel"] | true;
         config.offlineTimeoutSec = doc["offlineTimeoutSec"] | DEFAULT_OFFLINE_TIMEOUT_SEC;
+        config.brightness = constrain(doc["brightness"] | 70, 0, 100);
         config.offlineTimeoutSec = constrain(config.offlineTimeoutSec,
                                             (uint16_t)MIN_OFFLINE_TIMEOUT_SEC,
                                             (uint16_t)MAX_OFFLINE_TIMEOUT_SEC);
@@ -293,6 +298,7 @@ public:
         doc["displayTime"] = config.defaultDisplayTime;
         doc["autoCarousel"] = config.autoCarousel;
         doc["offlineTimeoutSec"] = config.offlineTimeoutSec;
+        doc["brightness"] = config.brightness;
 
         // 設定精靈
         doc["setupComplete"] = config.setupComplete;

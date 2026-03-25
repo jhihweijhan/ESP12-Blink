@@ -36,7 +36,9 @@ public:
         pinMode(TFT_BL, OUTPUT);
 
         digitalWrite(TFT_CS, HIGH);
-        digitalWrite(TFT_BL, LOW);  // 背光 ON
+        // 預設 70% 亮度（PWM）
+        analogWriteRange(1023);
+        setBrightness(70);
 
         SPI.begin();
         // SPI clock: 40MHz (was 10MHz). ESP8266 80/2 divider = 40MHz actual.
@@ -203,10 +205,26 @@ public:
     }
 
     void setBacklight(bool on) {
-        digitalWrite(TFT_BL, on ? LOW : HIGH);  // LOW = ON
+        if (on) {
+            setBrightness(_brightness);
+        } else {
+            analogWrite(TFT_BL, 1023);  // 全暗
+        }
     }
 
+    // 設定背光亮度 0-100%（反向 PWM：0%=全暗, 100%=最亮）
+    void setBrightness(uint8_t percent) {
+        if (percent > 100) percent = 100;
+        _brightness = percent;
+        uint16_t pwm = 1023 - (uint16_t)(percent * 1023UL / 100);
+        analogWrite(TFT_BL, pwm);
+    }
+
+    uint8_t getBrightness() const { return _brightness; }
+
 private:
+    uint8_t _brightness = 70;
+
     void writeCommand(uint8_t cmd) {
         digitalWrite(TFT_DC, LOW);
         digitalWrite(TFT_CS, LOW);

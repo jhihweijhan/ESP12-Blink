@@ -420,6 +420,7 @@ private:
         doc["displayTime"] = cfg.defaultDisplayTime;
         doc["autoCarousel"] = cfg.autoCarousel;
         doc["offlineTimeoutSec"] = cfg.offlineTimeoutSec;
+        doc["brightness"] = cfg.brightness;
 
         String json;
         serializeJson(doc, json);
@@ -575,6 +576,10 @@ private:
         cfg.offlineTimeoutSec = data["offlineTimeoutSec"] | DEFAULT_OFFLINE_TIMEOUT_SEC;
         cfg.offlineTimeoutSec = constrain(cfg.offlineTimeoutSec, (uint16_t)MIN_OFFLINE_TIMEOUT_SEC,
                                           (uint16_t)MAX_OFFLINE_TIMEOUT_SEC);
+
+        if (data.containsKey("brightness")) {
+            cfg.brightness = constrain((int)(data["brightness"] | 70), 0, 100);
+        }
 
         if (_monitorConfig->save()) {
             request->send(200, "application/json", "{\"success\":true}");
