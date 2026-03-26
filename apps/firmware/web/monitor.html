@@ -101,8 +101,9 @@
         <div class="form-group"><label>Offline Timeout (sec)</label><input type="number" id="offlineTimeoutSec" value="20" min="5" max="300"></div>
         <div class="form-group">
           <label>Brightness: <span id="brightnessVal">70</span>%</label>
-          <input type="range" id="brightness" min="10" max="100" value="70" step="5" style="width:100%" oninput="document.getElementById('brightnessVal').textContent=this.value">
+          <input type="range" id="brightness" min="1" max="100" value="70" step="1" style="width:100%" oninput="document.getElementById('brightnessVal').textContent=this.value">
         </div>
+        <div class="form-group"><label><input type="checkbox" id="touchEnabled" checked> Touch Sensor Enabled</label></div>
       </div>
       <div class="card">
         <h2>Alert Thresholds</h2>
@@ -236,6 +237,7 @@
           var br = cfg.brightness || 70;
           document.getElementById('brightness').value = br;
           document.getElementById('brightnessVal').textContent = br;
+          document.getElementById('touchEnabled').checked = cfg.touchEnabled !== false;
 
           if (cfg.thresholds) {
             document.getElementById('cpuWarn').value = cfg.thresholds.cpuWarn || 70;
@@ -288,6 +290,7 @@
         autoCarousel: document.getElementById('autoCarousel').value === '1',
         offlineTimeoutSec: parseInt(document.getElementById('offlineTimeoutSec').value, 10) || 20,
         brightness: parseInt(document.getElementById('brightness').value, 10) || 70,
+        touchEnabled: document.getElementById('touchEnabled').checked,
         thresholds: {
           cpuWarn: parseInt(document.getElementById('cpuWarn').value, 10),
           cpuCrit: parseInt(document.getElementById('cpuCrit').value, 10),

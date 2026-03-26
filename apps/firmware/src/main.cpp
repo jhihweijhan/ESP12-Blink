@@ -381,9 +381,10 @@ void loop() {
         webServer->loop();
     }
 
-    // 觸控偵測 — 所有模式下都偵測
+    // 觸控偵測 — 設定中啟用時才處理事件
     {
         TouchSensor::Event evt = touchSensor.poll();
+        if (!monitorConfig.config.touchEnabled) evt = TouchSensor::NONE;
         if (evt == TouchSensor::TAP) {
             if (currentMode == MODE_MONITOR && monitorDisplay) {
                 tft.fillRect(0, 0, 240, 2, COLOR_CYAN);

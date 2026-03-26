@@ -421,6 +421,7 @@ private:
         doc["autoCarousel"] = cfg.autoCarousel;
         doc["offlineTimeoutSec"] = cfg.offlineTimeoutSec;
         doc["brightness"] = cfg.brightness;
+        doc["touchEnabled"] = cfg.touchEnabled;
 
         String json;
         serializeJson(doc, json);
@@ -579,6 +580,9 @@ private:
 
         if (data.containsKey("brightness")) {
             cfg.brightness = constrain((int)(data["brightness"] | 70), 0, 100);
+        }
+        if (data.containsKey("touchEnabled")) {
+            cfg.touchEnabled = data["touchEnabled"] | true;
         }
 
         if (_monitorConfig->save()) {

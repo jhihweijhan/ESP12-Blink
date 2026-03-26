@@ -91,6 +91,7 @@ struct MonitorConfig {
 
     // 顯示設定
     uint8_t brightness;           // 背光亮度 0-100%
+    bool touchEnabled;            // 觸控感測器啟用
 
     // 設定精靈狀態
     bool setupComplete;           // 首次設定是否已完成
@@ -150,6 +151,7 @@ public:
         // 離線判定預設
         config.offlineTimeoutSec = DEFAULT_OFFLINE_TIMEOUT_SEC;
         config.brightness = 70;
+        config.touchEnabled = true;
 
         // 設定精靈預設
         config.setupComplete = false;
@@ -239,6 +241,7 @@ public:
         config.autoCarousel = doc["autoCarousel"] | true;
         config.offlineTimeoutSec = doc["offlineTimeoutSec"] | DEFAULT_OFFLINE_TIMEOUT_SEC;
         config.brightness = constrain(doc["brightness"] | 70, 0, 100);
+        config.touchEnabled = doc["touchEnabled"] | true;
         config.offlineTimeoutSec = constrain(config.offlineTimeoutSec,
                                             (uint16_t)MIN_OFFLINE_TIMEOUT_SEC,
                                             (uint16_t)MAX_OFFLINE_TIMEOUT_SEC);
@@ -299,6 +302,7 @@ public:
         doc["autoCarousel"] = config.autoCarousel;
         doc["offlineTimeoutSec"] = config.offlineTimeoutSec;
         doc["brightness"] = config.brightness;
+        doc["touchEnabled"] = config.touchEnabled;
 
         // 設定精靈
         doc["setupComplete"] = config.setupComplete;
